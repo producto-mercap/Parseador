@@ -100,7 +100,7 @@
         document.addEventListener('alpine:init', () => {
             Alpine.data('parseadorApp', () => ({
                 init() {
-                    this.parsers = JSON.parse('<%- JSON.stringify(parsers) %>');
+                    this.parsers = <%- JSON.stringify(parsers) %>;
                     this.activeTab = Object.keys(this.groupedData)?.[0] || 'sec1';
                     this.activeEditTab = 0;
                     this.esFormatoJson = false;
