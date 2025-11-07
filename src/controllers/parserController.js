@@ -204,6 +204,8 @@ exports.parseManual = async (req, res) => {
         console.log('=== parseManual llamado ===');
         console.log('parserId:', parserId);
         console.log('text length:', text?.length);
+        console.log('Primeros 200 caracteres del texto recibido:', JSON.stringify(text?.substring(0, 200)));
+        console.log('Últimos 50 caracteres del texto recibido:', JSON.stringify(text?.substring(Math.max(0, text.length - 50))));
         
         const parserData = await ParserDB.getById(parserId);
         if (!parserData) {
@@ -211,7 +213,10 @@ exports.parseManual = async (req, res) => {
             return res.status(404).json({ error: 'Parser no encontrado' });
         }
 
-        console.log('Parser encontrado:', parserData.nombre, 'esFormatoJson:', parserData.esFormatoJson);
+        console.log('Parser encontrado:', parserData.nombre);
+        console.log('Parser tiene delimitador:', parserData.tieneDelimitador);
+        console.log('Parser columnas:', parserData.columnas?.map(c => ({ nombre: c.nombre, caracteres: c.caracteres })));
+        
         const parser = new Parser(parserData);
         const resultado = await parser.parseManual(text);
 

@@ -61,6 +61,14 @@ class Parser {
     }
 
     async parseManual(text) {
+        console.log('=== parseManual - Inicio ===');
+        console.log('Tipo de texto:', typeof text);
+        console.log('Longitud del texto:', text?.length);
+        console.log('Primeros 100 caracteres recibidos:', JSON.stringify(text?.substring(0, 100)));
+        console.log('Parser tiene delimitador:', this.tieneDelimitador);
+        console.log('Parser incluye secciones:', this.incluyeSecciones);
+        console.log('Número de columnas:', this.columnas?.length);
+        
         if (this.esFormatoJson) {
             const resultados = this.procesarJson(text);
             console.log('Resultados procesarJson:', resultados);
@@ -71,7 +79,18 @@ class Parser {
             };
         }
         
-        const lineas = text.split('\n').filter(linea => linea.trim());
+        // Para parseadores sin delimitador, NO debemos filtrar líneas vacías con trim()
+        // porque los espacios son parte de los datos. Solo dividir por saltos de línea.
+        const lineas = this.tieneDelimitador 
+            ? text.split('\n').filter(linea => linea.trim())
+            : text.split('\n').filter(linea => linea.length > 0); // Solo eliminar líneas completamente vacías
+        
+        console.log('Número de líneas después de split:', lineas.length);
+        if (lineas.length > 0) {
+            console.log('Longitud primera línea:', lineas[0].length);
+            console.log('Primeros 100 caracteres primera línea:', JSON.stringify(lineas[0].substring(0, 100)));
+        }
+        
         let resultados;
         
         if (this.incluyeSecciones) {
@@ -110,22 +129,48 @@ class Parser {
     }
 
     procesarLineasSimple(lineas) {
-        return lineas.map(linea => {
+        return lineas.map((linea, lineaIndex) => {
             const resultado = {};
 
             if (this.tieneDelimitador) {
                 const valores = linea.split(this.delimitador);
                 this.columnas.forEach((columna, idx) => {
+                    // Usar ID de columna como clave única para evitar sobrescritura con nombres duplicados
+                    const claveUnica = columna.id ? `col_${columna.id}` : `col_${idx}`;
+                    resultado[claveUnica] = valores[idx]?.trim() || '';
+                    // También mantener el nombre para compatibilidad (aunque se sobrescriba si hay duplicados)
                     resultado[columna.nombre] = valores[idx]?.trim() || '';
                 });
             } else {
+                // Para parseadores sin delimitador, NO debemos hacer trim de la línea completa
+                // porque los espacios son parte de los datos de posición fija
+                console.log(`Procesando línea ${lineaIndex + 1}, longitud: ${linea.length}`);
+                console.log(`Primeros 100 caracteres: "${linea.substring(0, 100)}"`);
+                console.log(`Caracteres en posiciones clave: 0-3="${linea.substring(0, 4)}", 4="${linea.substring(4, 5)}", 5-7="${linea.substring(5, 8)}"`);
+                
                 let posicion = 0;
-                this.columnas.forEach(columna => {
+                this.columnas.forEach((columna, colIndex) => {
                     const longitud = columna.caracteres || columna.cantidad_caracteres || 0;
-                    const valor = linea.substr(posicion, longitud);
-                    resultado[columna.nombre] = valor ? valor.trim() : '';
+                    
+                    // Usar substring en lugar de substr (deprecado)
+                    // substring(start, end) donde end es exclusivo
+                    const valor = linea.substring(posicion, posicion + longitud);
+                    
+                    // Usar ID de columna como clave única para evitar sobrescritura con nombres duplicados
+                    const claveUnica = columna.id ? `col_${columna.id}` : `col_${colIndex}`;
+                    resultado[claveUnica] = valor || '';
+                    // También mantener el nombre para compatibilidad (aunque se sobrescriba si hay duplicados)
+                    resultado[columna.nombre] = valor || '';
+                    
+                    console.log(`Columna ${colIndex} (${columna.nombre}, ID: ${columna.id}): pos=${posicion}, long=${longitud}, valor="${valor}"`);
+                    
                     posicion += longitud;
                 });
+                
+                console.log(`Total procesado: ${posicion} caracteres de ${linea.length} disponibles`);
+                if (posicion < linea.length) {
+                    console.log(`ADVERTENCIA: Quedan ${linea.length - posicion} caracteres sin procesar`);
+                }
             }
 
             return resultado;
@@ -172,6 +217,10 @@ class Parser {
         
         const resultado = {};
         this.columnas.forEach((columna, index) => {
+            // Usar ID de columna como clave única para evitar sobrescritura con nombres duplicados
+            const claveUnica = columna.id ? `col_${columna.id}` : `col_${index}`;
+            resultado[claveUnica] = valores[index]?.trim() || '';
+            // También mantener el nombre para compatibilidad
             resultado[columna.nombre] = valores[index]?.trim() || '';
         });
         
@@ -182,10 +231,15 @@ class Parser {
         const resultado = {};
         let posicion = 0;
         
-        this.columnas.forEach(columna => {
+        this.columnas.forEach((columna, index) => {
             const longitud = columna.caracteres || columna.cantidad_caracteres || 0;
-            const valor = linea.substr(posicion, longitud);
-            resultado[columna.nombre] = valor ? valor.trim() : '';
+            // Usar substring en lugar de substr (deprecado)
+            const valor = linea.substring(posicion, posicion + longitud);
+            // Usar ID de columna como clave única para evitar sobrescritura con nombres duplicados
+            const claveUnica = columna.id ? `col_${columna.id}` : `col_${index}`;
+            resultado[claveUnica] = valor || '';
+            // También mantener el nombre para compatibilidad
+            resultado[columna.nombre] = valor || '';
             posicion += longitud;
         });
         
@@ -202,13 +256,23 @@ class Parser {
             if (seccion.tieneDelimitador || seccion.tiene_delimitador) {
                 const valores = linea.split(seccion.delimitador || ';');
                 seccion.columnas.forEach((columna, idx) => {
+                    // Usar ID de columna como clave única para evitar sobrescritura con nombres duplicados
+                    const claveUnica = columna.id ? `col_${columna.id}` : `col_${idx}`;
+                    resultado[claveUnica] = valores[idx]?.trim() || '';
+                    // También mantener el nombre para compatibilidad
                     resultado[columna.nombre] = valores[idx]?.trim() || '';
                 });
             } else {
                 let posicion = 0;
-                seccion.columnas.forEach(columna => {
-                    const longitud = columna.caracteres || columna.cantidad_caracteres;
-                    resultado[columna.nombre] = linea.substr(posicion, longitud).trim();
+                seccion.columnas.forEach((columna, idx) => {
+                    const longitud = columna.caracteres || columna.cantidad_caracteres || 0;
+                    // Usar substring en lugar de substr (deprecado)
+                    const valor = linea.substring(posicion, posicion + longitud);
+                    // Usar ID de columna como clave única para evitar sobrescritura con nombres duplicados
+                    const claveUnica = columna.id ? `col_${columna.id}` : `col_${idx}`;
+                    resultado[claveUnica] = valor || '';
+                    // También mantener el nombre para compatibilidad
+                    resultado[columna.nombre] = valor || '';
                     posicion += longitud;
                 });
             }
