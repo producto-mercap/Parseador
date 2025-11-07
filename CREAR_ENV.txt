@@ -1,0 +1,15 @@
+IMPORTANTE: Necesitas crear un archivo .env en esta misma carpeta
+
+Pasos:
+1. Crea un archivo nuevo en esta carpeta llamado exactamente: .env
+2. Copia y pega el siguiente contenido:
+
+DATABASE_URL=postgresql://neondb_owner:npg_y7hUsMv3WYnr@ep-withered-sky-ahlu6p50-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+PORT=3001
+NODE_ENV=development
+
+3. Guarda el archivo
+4. Ejecuta: npm run dev
+
+El archivo .env debe estar en: C:\Users\pvitale\Documents\ProyectosCursor\Parseador\.env
+
