@@ -144,6 +144,17 @@ class ParserDB {
             parser.tieneDelimitador = parser.tiene_delimitador;
             parser.incluyeSecciones = parser.incluye_secciones;
             
+            // Asegurar que esFormatoJson esté presente (PostgreSQL puede retornar true/false o null)
+            parser.esFormatoJson = parser.esformatojson !== undefined ? parser.esformatojson : (parser.esFormatoJson || false);
+            
+            // Debug
+            console.log('Parser desde DB:', {
+                id: parser.id,
+                nombre: parser.nombre,
+                esformatojson: parser.esformatojson,
+                esFormatoJson: parser.esFormatoJson
+            });
+            
             return parser;
         } catch (error) {
             throw error;

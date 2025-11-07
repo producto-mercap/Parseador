@@ -6,7 +6,14 @@ class Parser {
         this.delimitador = data.delimitador;
         this.cantidadColumnas = data.cantidad_columnas;
         this.incluyeSecciones = data.incluye_secciones || data.incluyeSecciones;
-        this.esFormatoJson = data.esFormatoJson || false;
+        // PostgreSQL puede retornar el campo en minúsculas o camelCase
+        this.esFormatoJson = data.esFormatoJson !== undefined ? data.esFormatoJson : 
+                            (data.esformatojson !== undefined ? data.esformatojson : false);
+        
+        console.log('Parser constructor - esFormatoJson:', this.esFormatoJson, 'data:', {
+            esFormatoJson: data.esFormatoJson,
+            esformatojson: data.esformatojson
+        });
         
         // Asegurarnos que las columnas y secciones se inicializan correctamente
         if (this.incluyeSecciones) {
@@ -56,9 +63,11 @@ class Parser {
     async parseManual(text) {
         if (this.esFormatoJson) {
             const resultados = this.procesarJson(text);
+            console.log('Resultados procesarJson:', resultados);
+            console.log('Columnas:', this.columnas);
             return {
                 data: resultados,
-                columnas: this.columnas
+                columnas: this.columnas || []
             };
         }
         
@@ -112,9 +121,10 @@ class Parser {
             } else {
                 let posicion = 0;
                 this.columnas.forEach(columna => {
-                    const valor = linea.substr(posicion, columna.cantidad_caracteres);
+                    const longitud = columna.caracteres || columna.cantidad_caracteres || 0;
+                    const valor = linea.substr(posicion, longitud);
                     resultado[columna.nombre] = valor ? valor.trim() : '';
-                    posicion += columna.cantidad_caracteres;
+                    posicion += longitud;
                 });
             }
 
@@ -173,9 +183,10 @@ class Parser {
         let posicion = 0;
         
         this.columnas.forEach(columna => {
-            const valor = linea.substr(posicion, columna.cantidad_caracteres);
+            const longitud = columna.caracteres || columna.cantidad_caracteres || 0;
+            const valor = linea.substr(posicion, longitud);
             resultado[columna.nombre] = valor ? valor.trim() : '';
-            posicion += columna.cantidad_caracteres;
+            posicion += longitud;
         });
         
         return resultado;
@@ -208,50 +219,102 @@ class Parser {
 
     procesarJson(contenido) {
         try {
-            const jsonData = JSON.parse(contenido);
-            const resultados = [];
+            // Limpiar el contenido de espacios en blanco al inicio y final
+            const contenidoLimpio = contenido.trim();
+            const jsonData = JSON.parse(contenidoLimpio);
             const todasLasClaves = new Set();
+            const resultadoAplanado = {};
 
-            const aplanarObjeto = (obj, path = '', resultado = {}) => {
+            const aplanarObjeto = (obj, path = '') => {
+                // Si no es un objeto válido, retornar
+                if (!obj || typeof obj !== 'object') {
+                    return;
+                }
+
+                // Si es un array, procesar cada elemento
+                if (Array.isArray(obj)) {
+                    obj.forEach((item, index) => {
+                        const newPath = path ? `${path}[${index}]` : `[${index}]`;
+                        if (item && typeof item === 'object' && !Array.isArray(item)) {
+                            aplanarObjeto(item, newPath);
+                        } else {
+                            resultadoAplanado[newPath] = item;
+                            todasLasClaves.add(newPath);
+                        }
+                    });
+                    return;
+                }
+
+                // Procesar objeto normal
                 for (const [key, value] of Object.entries(obj)) {
                     const newPath = path ? `${path}.${key}` : key;
                     
-                    if (value && typeof value === 'object' && !Array.isArray(value)) {
-                        aplanarObjeto(value, newPath, resultado);
-                    } else if (Array.isArray(value)) {
-                        value.forEach((item, index) => {
-                            if (item && typeof item === 'object') {
-                                aplanarObjeto(item, `${newPath}[${index}]`, resultado);
-                            } else {
-                                resultado[`${newPath}[${index}]`] = item;
-                                todasLasClaves.add(`${newPath}[${index}]`);
-                            }
-                        });
-                    } else {
-                        resultado[newPath] = value;
+                    // Manejar valores null o undefined
+                    if (value === null || value === undefined) {
+                        resultadoAplanado[newPath] = value;
+                        todasLasClaves.add(newPath);
+                        continue;
+                    }
+                    
+                    // Si es un objeto anidado (pero no array)
+                    if (typeof value === 'object' && !Array.isArray(value)) {
+                        aplanarObjeto(value, newPath);
+                    } 
+                    // Si es un array
+                    else if (Array.isArray(value)) {
+                        if (value.length === 0) {
+                            resultadoAplanado[newPath] = [];
+                            todasLasClaves.add(newPath);
+                        } else {
+                            value.forEach((item, index) => {
+                                if (item && typeof item === 'object' && !Array.isArray(item)) {
+                                    aplanarObjeto(item, `${newPath}[${index}]`);
+                                } else {
+                                    resultadoAplanado[`${newPath}[${index}]`] = item;
+                                    todasLasClaves.add(`${newPath}[${index}]`);
+                                }
+                            });
+                        }
+                    } 
+                    // Valor primitivo (string, number, boolean)
+                    else {
+                        resultadoAplanado[newPath] = value;
                         todasLasClaves.add(newPath);
                     }
                 }
-                return resultado;
             };
 
+            // Procesar según el tipo de dato
             if (Array.isArray(jsonData)) {
-                jsonData.forEach(item => {
-                    if (item && typeof item === 'object') {
-                        resultados.push(aplanarObjeto(item));
+                jsonData.forEach((item, index) => {
+                    if (item && typeof item === 'object' && !Array.isArray(item)) {
+                        aplanarObjeto(item);
                     }
                 });
-            } else if (jsonData && typeof jsonData === 'object') {
-                resultados.push(aplanarObjeto(jsonData));
+            } else if (jsonData && typeof jsonData === 'object' && !Array.isArray(jsonData)) {
+                aplanarObjeto(jsonData);
             }
 
-            this.columnas = Array.from(todasLasClaves).map(clave => ({
-                nombre: clave,
-                tipo: 'string'
-            }));
+            // Debug: verificar qué se está creando
+            console.log('Resultado aplanado:', resultadoAplanado);
+            console.log('Claves encontradas:', Array.from(todasLasClaves));
+            console.log('Número de propiedades:', Object.keys(resultadoAplanado).length);
 
-            return resultados;
+            // Crear columnas basadas en todas las claves encontradas
+            this.columnas = Array.from(todasLasClaves)
+                .sort()
+                .map(clave => ({
+                    nombre: clave,
+                    tipo: 'string'
+                }));
+
+            // Retornar un array con un solo objeto aplanado
+            const resultadoFinal = Object.keys(resultadoAplanado).length > 0 ? [resultadoAplanado] : [];
+            console.log('Resultado final a retornar:', resultadoFinal);
+            console.log('Columnas creadas:', this.columnas.length);
+            return resultadoFinal;
         } catch (error) {
+            console.error('Error en procesarJson:', error);
             throw new Error(`Error al procesar JSON: ${error.message}`);
         }
     }

@@ -201,16 +201,34 @@ function processFormData(formData) {
 exports.parseManual = async (req, res) => {
     try {
         const { parserId, text } = req.body;
+        console.log('=== parseManual llamado ===');
+        console.log('parserId:', parserId);
+        console.log('text length:', text?.length);
         
         const parserData = await ParserDB.getById(parserId);
         if (!parserData) {
+            console.log('Parser no encontrado');
             return res.status(404).json({ error: 'Parser no encontrado' });
         }
 
+        console.log('Parser encontrado:', parserData.nombre, 'esFormatoJson:', parserData.esFormatoJson);
         const parser = new Parser(parserData);
         const resultado = await parser.parseManual(text);
 
-        res.json({
+        console.log('Resultado parseManual:', {
+            tieneData: !!resultado.data,
+            dataLength: Array.isArray(resultado.data) ? resultado.data.length : 'no es array',
+            tieneColumnas: !!resultado.columnas,
+            columnasLength: Array.isArray(resultado.columnas) ? resultado.columnas.length : 'no es array',
+            porSeccion: resultado.porSeccion
+        });
+
+        if (Array.isArray(resultado.data) && resultado.data.length > 0) {
+            console.log('Primer elemento de data:', JSON.stringify(resultado.data[0], null, 2));
+            console.log('Claves del primer elemento:', Object.keys(resultado.data[0]));
+        }
+
+        const response = {
             success: true,
             porSeccion: resultado.porSeccion,
             ...(resultado.porSeccion 
@@ -220,8 +238,17 @@ exports.parseManual = async (req, res) => {
                     columns: resultado.columnas || []
                 }
             )
+        };
+
+        console.log('Enviando respuesta:', {
+            success: response.success,
+            dataLength: Array.isArray(response.data) ? response.data.length : 'no es array',
+            columnsLength: Array.isArray(response.columns) ? response.columns.length : 'no es array'
         });
+
+        res.json(response);
     } catch (error) {
+        console.error('Error en parseManual:', error);
         res.status(500).json({ error: error.message });
     }
 };
