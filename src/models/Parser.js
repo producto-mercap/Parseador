@@ -10,11 +10,6 @@ class Parser {
         this.esFormatoJson = data.esFormatoJson !== undefined ? data.esFormatoJson : 
                             (data.esformatojson !== undefined ? data.esformatojson : false);
         
-        console.log('Parser constructor - esFormatoJson:', this.esFormatoJson, 'data:', {
-            esFormatoJson: data.esFormatoJson,
-            esformatojson: data.esformatojson
-        });
-        
         // Asegurarnos que las columnas y secciones se inicializan correctamente
         if (this.incluyeSecciones) {
             this.secciones = data.secciones.map(seccion => ({
@@ -61,18 +56,8 @@ class Parser {
     }
 
     async parseManual(text) {
-        console.log('=== parseManual - Inicio ===');
-        console.log('Tipo de texto:', typeof text);
-        console.log('Longitud del texto:', text?.length);
-        console.log('Primeros 100 caracteres recibidos:', JSON.stringify(text?.substring(0, 100)));
-        console.log('Parser tiene delimitador:', this.tieneDelimitador);
-        console.log('Parser incluye secciones:', this.incluyeSecciones);
-        console.log('Número de columnas:', this.columnas?.length);
-        
         if (this.esFormatoJson) {
             const resultados = this.procesarJson(text);
-            console.log('Resultados procesarJson:', resultados);
-            console.log('Columnas:', this.columnas);
             return {
                 data: resultados,
                 columnas: this.columnas || []
@@ -84,12 +69,6 @@ class Parser {
         const lineas = this.tieneDelimitador 
             ? text.split('\n').filter(linea => linea.trim())
             : text.split('\n').filter(linea => linea.length > 0); // Solo eliminar líneas completamente vacías
-        
-        console.log('Número de líneas después de split:', lineas.length);
-        if (lineas.length > 0) {
-            console.log('Longitud primera línea:', lineas[0].length);
-            console.log('Primeros 100 caracteres primera línea:', JSON.stringify(lineas[0].substring(0, 100)));
-        }
         
         let resultados;
         
@@ -144,10 +123,6 @@ class Parser {
             } else {
                 // Para parseadores sin delimitador, NO debemos hacer trim de la línea completa
                 // porque los espacios son parte de los datos de posición fija
-                console.log(`Procesando línea ${lineaIndex + 1}, longitud: ${linea.length}`);
-                console.log(`Primeros 100 caracteres: "${linea.substring(0, 100)}"`);
-                console.log(`Caracteres en posiciones clave: 0-3="${linea.substring(0, 4)}", 4="${linea.substring(4, 5)}", 5-7="${linea.substring(5, 8)}"`);
-                
                 let posicion = 0;
                 this.columnas.forEach((columna, colIndex) => {
                     const longitud = columna.caracteres || columna.cantidad_caracteres || 0;
@@ -162,15 +137,8 @@ class Parser {
                     // También mantener el nombre para compatibilidad (aunque se sobrescriba si hay duplicados)
                     resultado[columna.nombre] = valor || '';
                     
-                    console.log(`Columna ${colIndex} (${columna.nombre}, ID: ${columna.id}): pos=${posicion}, long=${longitud}, valor="${valor}"`);
-                    
                     posicion += longitud;
                 });
-                
-                console.log(`Total procesado: ${posicion} caracteres de ${linea.length} disponibles`);
-                if (posicion < linea.length) {
-                    console.log(`ADVERTENCIA: Quedan ${linea.length - posicion} caracteres sin procesar`);
-                }
             }
 
             return resultado;

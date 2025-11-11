@@ -147,14 +147,6 @@ class ParserDB {
             // Asegurar que esFormatoJson esté presente (PostgreSQL puede retornar true/false o null)
             parser.esFormatoJson = parser.esformatojson !== undefined ? parser.esformatojson : (parser.esFormatoJson || false);
             
-            // Debug
-            console.log('Parser desde DB:', {
-                id: parser.id,
-                nombre: parser.nombre,
-                esformatojson: parser.esformatojson,
-                esFormatoJson: parser.esFormatoJson
-            });
-            
             return parser;
         } catch (error) {
             throw error;
@@ -269,15 +261,27 @@ class ParserDB {
                 // Luego eliminar las secciones
                 await client.query('DELETE FROM secciones WHERE parseador_id = $1', [id]);
 
-                // Insertar secciones actualizadas
-                for (let index = 0; index < parserData.secciones.length; index++) {
-                    const seccion = parserData.secciones[index];
-                    
-                    if (!seccion.columnas || !Array.isArray(seccion.columnas)) {
-                        throw new Error(`La sección ${seccion.nombre} no tiene columnas válidas`);
-                    }
+                // Insertar secciones actualizadas usando bulk insert
+                if (parserData.secciones.length > 0) {
+                    // Preparar valores para bulk insert de secciones
+                    const seccionesValues = parserData.secciones.map((seccion, index) => [
+                        id,
+                        seccion.nombre,
+                        seccion.header,
+                        seccion.tieneDelimitador || false,
+                        seccion.delimitador,
+                        seccion.columnas?.length || 0,
+                        index
+                    ]);
 
-                    const seccionResult = await client.query(
+                    // Bulk insert de secciones
+                    const seccionesPlaceholders = seccionesValues.map((_, idx) => {
+                        const base = idx * 7;
+                        return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7})`;
+                    }).join(', ');
+
+                    const seccionesFlatValues = seccionesValues.flat();
+                    const seccionesResult = await client.query(
                         `INSERT INTO secciones (
                             parseador_id,
                             nombre,
@@ -286,32 +290,39 @@ class ParserDB {
                             delimitador,
                             cantidad_columnas,
                             orden
-                        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-                        RETURNING id`,
-                        [
-                            id,
-                            seccion.nombre,
-                            seccion.header,
-                            seccion.tieneDelimitador || false,
-                            seccion.delimitador,
-                            seccion.columnas.length,
-                            index
-                        ]
+                        ) VALUES ${seccionesPlaceholders}
+                        RETURNING id, orden`,
+                        seccionesFlatValues
                     );
 
-                    const seccionId = seccionResult.rows[0].id;
+                    // Preparar valores para bulk insert de columnas de secciones
+                    const columnasSeccionValues = [];
+                    parserData.secciones.forEach((seccion, seccionIndex) => {
+                        if (!seccion.columnas || !Array.isArray(seccion.columnas)) {
+                            throw new Error(`La sección ${seccion.nombre} no tiene columnas válidas`);
+                        }
+                        const seccionId = seccionesResult.rows[seccionIndex].id;
+                        seccion.columnas.forEach((columna, colIndex) => {
+                            columnasSeccionValues.push([seccionId, columna.nombre, columna.caracteres, colIndex]);
+                        });
+                    });
 
-                    // Insertar columnas de la sección
-                    for (let colIndex = 0; colIndex < seccion.columnas.length; colIndex++) {
-                        const columna = seccion.columnas[colIndex];
+                    // Bulk insert de columnas de secciones
+                    if (columnasSeccionValues.length > 0) {
+                        const columnasPlaceholders = columnasSeccionValues.map((_, idx) => {
+                            const base = idx * 4;
+                            return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`;
+                        }).join(', ');
+
+                        const columnasFlatValues = columnasSeccionValues.flat();
                         await client.query(
                             `INSERT INTO columnas_seccion (
                                 seccion_id,
                                 nombre,
                                 cantidad_caracteres,
                                 orden
-                            ) VALUES ($1, $2, $3, $4)`,
-                            [seccionId, columna.nombre, columna.caracteres, colIndex]
+                            ) VALUES ${columnasPlaceholders}`,
+                            columnasFlatValues
                         );
                     }
                 }
@@ -325,22 +336,31 @@ class ParserDB {
                     throw new Error('No se proporcionaron columnas válidas');
                 }
                 
-                // Insertar todas las columnas nuevas
-                for (let index = 0; index < parserData.columnas.length; index++) {
-                    const columna = parserData.columnas[index];
-                    
-                    if (!columna || typeof columna.nombre === 'undefined') {
-                        throw new Error(`Columna ${index + 1} no tiene los datos requeridos`);
-                    }
+                // Insertar todas las columnas nuevas usando bulk insert
+                if (parserData.columnas.length > 0) {
+                    // Preparar valores para bulk insert
+                    const columnasValues = parserData.columnas.map((columna, index) => {
+                        if (!columna || typeof columna.nombre === 'undefined') {
+                            throw new Error(`Columna ${index + 1} no tiene los datos requeridos`);
+                        }
+                        return [id, columna.nombre, columna.caracteres, index];
+                    });
 
+                    // Bulk insert
+                    const placeholders = columnasValues.map((_, idx) => {
+                        const base = idx * 4;
+                        return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`;
+                    }).join(', ');
+
+                    const flatValues = columnasValues.flat();
                     await client.query(
                         `INSERT INTO columnas_parseador (
                             parseador_id,
                             nombre,
                             cantidad_caracteres,
                             orden
-                        ) VALUES ($1, $2, $3, $4)`,
-                        [id, columna.nombre, columna.caracteres, index]
+                        ) VALUES ${placeholders}`,
+                        flatValues
                     );
                 }
             }

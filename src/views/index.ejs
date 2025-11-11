@@ -37,15 +37,23 @@
             // Limpiar encabezados existentes
             headerRow.innerHTML = '';
 
-            // Actualizar encabezados
-            if (this.columns && Array.isArray(this.columns)) {
-                this.columns.forEach(col => {
-                    const th = document.createElement('th');
-                    th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
-                    th.textContent = col.nombre;
-                    headerRow.appendChild(th);
-                });
-            }
+                    // Actualizar encabezados con funcionalidad de ordenamiento
+                    if (this.columns && Array.isArray(this.columns)) {
+                        this.columns.forEach(col => {
+                            const th = document.createElement('th');
+                            th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none';
+                            th.innerHTML = `
+                                <div class="flex items-center gap-2">
+                                    <span>${col.nombre}</span>
+                                    <svg class="w-4 h-4 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity: 0.5;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                                    </svg>
+                                </div>
+                            `;
+                            th.onclick = () => this.sortTable(col.nombre);
+                            headerRow.appendChild(th);
+                        });
+                    }
 
             // Asegurarnos de que tbody exista
             let tbody = table.querySelector('tbody');
@@ -123,6 +131,11 @@
                 columns: [],
                 draggedItem: null,
                 draggedIndex: null,
+                tableData: [],
+                sortColumn: null,
+                sortDirection: 'asc',
+                sidebarCollapsed: false,
+                saving: false,
 
                 async actualizarParsers() {
                     console.log('Actualizando lista de parsers');
@@ -293,8 +306,8 @@
 
                 async parsearContenido() {
                     try {
-                        console.log('Iniciando parseo con parser:', this.selectedParser);
-                        console.log('Contenido a parsear:', this.manualInput);
+                        // Contraer el panel lateral al parsear
+                        this.sidebarCollapsed = true;
                         
                         const response = await fetch('/parse/manual', {
                             method: 'POST',
@@ -571,6 +584,9 @@
                         return;
                     }
 
+                    // Activar indicador de guardado
+                    this.saving = true;
+
                     try {
                         // Crear una copia limpia de los datos
                         const datosParaEnviar = {
@@ -582,16 +598,31 @@
                             tieneDelimitador: this.editingData.tieneDelimitador ? 1 : 0,
                             incluyeSecciones: this.editingData.incluyeSecciones ? 1 : 0,
                             columnas: Array.isArray(this.editingData.columnas) 
-                                ? this.editingData.columnas.map(col => ({
+                                ? this.editingData.columnas.map((col, index) => ({
                                     id: col.id,
                                     nombre: col.nombre?.trim(),
                                     caracteres: this.editingData.tieneDelimitador ? null : (col.caracteres || 1),
-                                    orden: col.orden
+                                    orden: index // Asegurar que el orden refleje la posición actual en el array
+                                }))
+                                : [],
+                            secciones: this.editingData.incluyeSecciones && Array.isArray(this.editingData.secciones)
+                                ? this.editingData.secciones.map(seccion => ({
+                                    nombre: seccion.nombre?.trim(),
+                                    header: seccion.header?.trim(),
+                                    tieneDelimitador: seccion.tieneDelimitador ? 1 : 0,
+                                    delimitador: seccion.delimitador || ';',
+                                    cantidadColumnas: seccion.columnas?.length || 0,
+                                    columnas: Array.isArray(seccion.columnas)
+                                        ? seccion.columnas.map((col, colIndex) => ({
+                                            nombre: col.nombre?.trim(),
+                                            caracteres: seccion.tieneDelimitador ? null : (col.caracteres || 1),
+                                            orden: colIndex // Asegurar que el orden refleje la posición actual
+                                        }))
+                                        : []
                                 }))
                                 : []
                         };
 
-                        console.log('Datos preparados para enviar:', datosParaEnviar);
 
                         // Validaciones
                         if (!datosParaEnviar.nombre?.trim()) {
@@ -643,6 +674,9 @@
                     } catch (error) {
                         console.error('Error en updateParser:', error);
                         alert('Error al actualizar parseador: ' + error.message);
+                    } finally {
+                        // Desactivar indicador de guardado
+                        this.saving = false;
                     }
                 },
 
@@ -677,12 +711,20 @@
                     // Limpiar encabezados existentes
                     headerRow.innerHTML = '';
 
-                    // Actualizar encabezados
+                    // Actualizar encabezados con funcionalidad de ordenamiento
                     if (this.columns && Array.isArray(this.columns)) {
                         this.columns.forEach(col => {
                             const th = document.createElement('th');
-                            th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
-                            th.textContent = col.nombre;
+                            th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none';
+                            th.innerHTML = `
+                                <div class="flex items-center gap-2">
+                                    <span>${col.nombre}</span>
+                                    <svg class="w-4 h-4 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity: 0.5;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                                    </svg>
+                                </div>
+                            `;
+                            th.onclick = () => this.sortTable(col.nombre);
                             headerRow.appendChild(th);
                         });
                     }
@@ -712,6 +754,57 @@
                         });
                         
                         tbody.appendChild(tr);
+                    });
+                    
+                    // Guardar datos para ordenamiento
+                    this.tableData = data;
+                },
+
+                sortTable(columnName) {
+                    if (!this.tableData || !Array.isArray(this.tableData)) return;
+                    
+                    // Alternar dirección de ordenamiento
+                    if (!this.sortColumn || this.sortColumn !== columnName) {
+                        this.sortColumn = columnName;
+                        this.sortDirection = 'asc';
+                    } else {
+                        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+                    }
+                    
+                    // Ordenar los datos
+                    const sortedData = [...this.tableData].sort((a, b) => {
+                        const aVal = a[columnName] || a[`col_${columnName}`] || '';
+                        const bVal = b[columnName] || b[`col_${columnName}`] || '';
+                        
+                        // Intentar comparar como números si es posible
+                        const aNum = parseFloat(aVal);
+                        const bNum = parseFloat(bVal);
+                        
+                        if (!isNaN(aNum) && !isNaN(bNum)) {
+                            return this.sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+                        }
+                        
+                        // Comparar como strings
+                        const comparison = String(aVal).localeCompare(String(bVal));
+                        return this.sortDirection === 'asc' ? comparison : -comparison;
+                    });
+                    
+                    // Actualizar la tabla con datos ordenados
+                    this.updateTable(sortedData);
+                    
+                    // Actualizar iconos de ordenamiento
+                    const headers = document.querySelectorAll('.data-table thead th');
+                    headers.forEach(th => {
+                        const icon = th.querySelector('.sort-icon');
+                        if (icon) {
+                            if (th.textContent.trim().includes(columnName)) {
+                                icon.style.opacity = '1';
+                                icon.style.transform = this.sortDirection === 'asc' ? 'rotate(0deg)' : 'rotate(180deg)';
+                            } else {
+                                icon.style.opacity = '0.5';
+                                icon.style.transform = 'rotate(0deg)';
+                            }
+                        }
                     });
                 },
 
@@ -1064,10 +1157,12 @@
         </div>
     </div>
 
-    <div class="min-h-screen flex">
+    <div class="min-h-screen flex items-stretch">
         <!-- Panel lateral -->
-        <div class="w-64 flex-shrink-0 bg-gray-50 shadow-lg">
-            <div class="p-4">
+        <div 
+            :class="sidebarCollapsed ? 'w-0 overflow-hidden' : 'w-64'"
+            class="flex-shrink-0 bg-gray-50 shadow-lg transition-all duration-300">
+            <div class="p-4" x-show="!sidebarCollapsed">
                 <!-- Botón Nuevo Parseador -->
                 <button 
                     @click="showModal = true"
@@ -1114,6 +1209,25 @@
                 </nav>
             </div>
         </div>
+
+        <!-- Botón para expandir/contraer panel lateral -->
+        <button
+            @click="sidebarCollapsed = !sidebarCollapsed"
+            class="fixed w-8 h-12 bg-gray-50 hover:bg-gray-100 border-l border-gray-200 flex items-center justify-center transition-all z-10"
+            :style="`left: ${sidebarCollapsed ? '0px' : '256px'}; top: 50%; transform: translateY(-50%);`"
+            title="Expandir/Contraer panel">
+            <svg 
+                :class="sidebarCollapsed ? 'rotate-180' : ''"
+                class="w-5 h-5 text-gray-600 transition-transform duration-300"
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </button>
+
+        <!-- Espaciador para el botón fijo cuando el sidebar está expandido -->
+        <div class="flex-shrink-0 w-8" x-show="!sidebarCollapsed"></div>
 
         <!-- Panel central -->
         <div class="flex-1 p-6">
@@ -1175,11 +1289,11 @@
 
                     <!-- Contenedor principal con flex-col para apilar elementos -->
                     <div class="flex flex-col gap-6">
-                        <!-- Contenedor de entrada con ancho fijo -->
-                        <div class="w-full max-w-3xl">
+                        <!-- Contenedor de entrada con ancho completo -->
+                        <div class="w-full">
                             <textarea 
                                 x-model="manualInput"
-                                class="custom-textarea"
+                                class="custom-textarea w-full"
                                 placeholder="Ingrese o pegue el contenido a parsear..."></textarea>
                         </div>
 
@@ -1815,15 +1929,25 @@
                                         </div>
                                     </template>
 
-                                    <button type="button" 
-                                            @click="editingData.columnas.push({
-                                                id: Date.now(), 
-                                                nombre: '', 
-                                                caracteres: editingData.tieneDelimitador ? null : 1
-                                            })"
-                                            class="mt-2 px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700">
-                                        + Columna
-                                    </button>
+                                    <div class="mt-2 flex items-center gap-2">
+                                        <button type="button" 
+                                                @click="editingData.columnas.push({
+                                                    id: Date.now(), 
+                                                    nombre: '', 
+                                                    caracteres: editingData.tieneDelimitador ? null : 1
+                                                })"
+                                                class="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 shadow-sm">
+                                            + Agregar al Final
+                                        </button>
+                                        <span class="text-sm text-gray-500">o insertar después de:</span>
+                                        <select @change="if($event.target.value !== '') { const idx = parseInt($event.target.value); editingData.columnas.splice(idx + 1, 0, {id: Date.now(), nombre: '', caracteres: editingData.tieneDelimitador ? null : 1}); $event.target.value = ''; }"
+                                                class="px-2 py-1 text-sm border border-gray-300 rounded">
+                                            <option value="">Seleccionar...</option>
+                                            <template x-for="(col, idx) in editingData.columnas" :key="col.id">
+                                                <option :value="idx" x-text="`${idx + 1}. ${col.nombre || 'Sin nombre'}`"></option>
+                                            </template>
+                                        </select>
+                                    </div>
                                 </div>
                             </template>
 
@@ -1908,12 +2032,22 @@
                                                     </div>
                                                 </template>
 
-                                                <!-- Botón agregar columna -->
-                                                <button type="button"
-                                                        @click="seccion.columnas.push({id: Date.now(), nombre: '', caracteres: 1})"
-                                                        class="mt-2 px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 shadow-sm">
-                                                    + Columna
-                                                </button>
+                                                <!-- Botones agregar columna -->
+                                                <div class="mt-2 flex items-center gap-2">
+                                                    <button type="button"
+                                                            @click="seccion.columnas.push({id: Date.now(), nombre: '', caracteres: 1})"
+                                                            class="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 shadow-sm">
+                                                        + Agregar al Final
+                                                    </button>
+                                                    <span class="text-sm text-gray-500">o insertar después de:</span>
+                                                    <select @change="if($event.target.value !== '') { const idx = parseInt($event.target.value); seccion.columnas.splice(idx + 1, 0, {id: Date.now(), nombre: '', caracteres: 1}); $event.target.value = ''; }"
+                                                            class="px-2 py-1 text-sm border border-gray-300 rounded">
+                                                        <option value="">Seleccionar...</option>
+                                                        <template x-for="(col, idx) in seccion.columnas" :key="col.id">
+                                                            <option :value="idx" x-text="`${idx + 1}. ${col.nombre || 'Sin nombre'}`"></option>
+                                                        </template>
+                                                    </select>
+                                                </div>
                                             </div>
                                         </div>
                                     </template>
@@ -1931,8 +2065,15 @@
                             Cancelar
                         </button>
                         <button type="submit" form="editForm"
-                                class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 shadow-sm">
-                            Guardar Cambios
+                                :disabled="saving"
+                                class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                            <template x-if="saving">
+                                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </template>
+                            <span x-text="saving ? 'Guardando...' : 'Guardar Cambios'"></span>
                         </button>
                     </div>
                 </div>
