@@ -573,8 +573,19 @@
                                 }));
                             }
                             
+                            // Inicializar selectedColumnIndex y asegurar que las secciones lo tengan
+                            if (data.parser.incluyeSecciones && Array.isArray(data.parser.secciones)) {
+                                data.parser.secciones = data.parser.secciones.map(seccion => ({
+                                    ...seccion,
+                                    selectedColumnIndex: seccion.selectedColumnIndex || ''
+                                }));
+                            }
+                            
                             console.log('Datos procesados para edición:', data.parser);
-                            this.editingData = { ...data.parser };
+                            this.editingData = { 
+                                ...data.parser,
+                                selectedColumnIndex: ''
+                            };
                             this.showEditModal = true;
                         } else {
                             throw new Error(data.error || 'Error al cargar el parseador');
@@ -1054,6 +1065,124 @@
             scrollbar-color: #888 #f1f1f1;
         }
 
+        /* Personalizar la barra de scroll horizontal para la tabla - MUY GRANDE */
+        .table-container::-webkit-scrollbar {
+            height: 40px !important;
+        }
+        
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1 !important;
+            border-radius: 20px !important;
+            margin: 4px 0;
+        }
+        
+        .table-container::-webkit-scrollbar-thumb {
+            background: #888 !important;
+            border-radius: 20px !important;
+            min-height: 40px !important;
+            border: 4px solid #f1f1f1;
+        }
+        
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #666 !important;
+        }
+
+        /* Para Firefox - scrollbar más grande */
+        .table-container {
+            scrollbar-width: auto !important;
+            scrollbar-color: #888 #f1f1f1 !important;
+        }
+        
+        /* Asegurar que todos los contenedores con overflow-x-auto tengan scrollbar grande */
+        div.overflow-x-auto::-webkit-scrollbar,
+        .overflow-x-auto::-webkit-scrollbar,
+        [class*="overflow-x-auto"]::-webkit-scrollbar {
+            height: 40px !important;
+        }
+        
+        div.overflow-x-auto::-webkit-scrollbar-track,
+        .overflow-x-auto::-webkit-scrollbar-track,
+        [class*="overflow-x-auto"]::-webkit-scrollbar-track {
+            background: #f1f1f1 !important;
+            border-radius: 20px !important;
+            margin: 4px 0;
+        }
+        
+        div.overflow-x-auto::-webkit-scrollbar-thumb,
+        .overflow-x-auto::-webkit-scrollbar-thumb,
+        [class*="overflow-x-auto"]::-webkit-scrollbar-thumb {
+            background: #888 !important;
+            border-radius: 20px !important;
+            min-height: 40px !important;
+            border: 4px solid #f1f1f1;
+        }
+        
+        div.overflow-x-auto::-webkit-scrollbar-thumb:hover,
+        .overflow-x-auto::-webkit-scrollbar-thumb:hover,
+        [class*="overflow-x-auto"]::-webkit-scrollbar-thumb:hover {
+            background: #666 !important;
+        }
+        
+        /* Estilo global para scrollbars horizontales - aplicar a TODOS los elementos */
+        /* Solo aplicar a elementos que tienen overflow-x */
+        [style*="overflow-x"],
+        [class*="overflow-x"] {
+            scrollbar-width: auto !important;
+        }
+        
+        [style*="overflow-x"]::-webkit-scrollbar,
+        [class*="overflow-x"]::-webkit-scrollbar {
+            height: 40px !important;
+        }
+        
+        [style*="overflow-x"]::-webkit-scrollbar-track,
+        [class*="overflow-x"]::-webkit-scrollbar-track {
+            background: #f1f1f1 !important;
+            border-radius: 20px !important;
+            margin: 4px 0;
+        }
+        
+        [style*="overflow-x"]::-webkit-scrollbar-thumb,
+        [class*="overflow-x"]::-webkit-scrollbar-thumb {
+            background: #888 !important;
+            border-radius: 20px !important;
+            min-height: 40px !important;
+            border: 4px solid #f1f1f1;
+        }
+        
+        [style*="overflow-x"]::-webkit-scrollbar-thumb:hover,
+        [class*="overflow-x"]::-webkit-scrollbar-thumb:hover {
+            background: #666 !important;
+        }
+
+        /* Asegurar que el botón del sidebar no se mueva con el scroll horizontal */
+        .sidebar-toggle-button {
+            position: fixed !important;
+            left: 0 !important;
+            top: 50vh !important;
+            transform: translateY(-50%) !important;
+            will-change: left;
+            z-index: 9999 !important;
+            margin: 0 !important;
+            pointer-events: auto !important;
+            /* Asegurar que el botón no se vea afectado por transformaciones de padres */
+            isolation: isolate;
+        }
+        
+        .sidebar-toggle-button:not(.collapsed) {
+            left: 256px !important;
+        }
+        
+        /* Asegurar que el contenedor principal no afecte el posicionamiento del botón */
+        .min-h-screen.flex {
+            position: relative;
+        }
+        
+        /* Asegurar que el panel central contenga el scroll horizontal solo en la tabla */
+        .flex-1.p-6 {
+            overflow-x: visible;
+        }
+
         /* Asegurar que el modal no sea más alto que la ventana */
         .modal-container {
             max-height: calc(100vh - 40px);
@@ -1216,8 +1345,8 @@
         <!-- Botón para expandir/contraer panel lateral -->
         <button
             @click="sidebarCollapsed = !sidebarCollapsed"
-            class="fixed w-8 h-12 bg-gray-50 hover:bg-gray-100 border-l border-gray-200 flex items-center justify-center transition-all z-10"
-            :style="`left: ${sidebarCollapsed ? '0px' : '256px'}; top: 50%; transform: translateY(-50%);`"
+            class="sidebar-toggle-button w-8 h-12 bg-gray-50 hover:bg-gray-100 border-l border-gray-200 flex items-center justify-center transition-all"
+            :class="sidebarCollapsed ? 'collapsed' : ''"
             title="Expandir/Contraer panel">
             <svg 
                 :class="sidebarCollapsed ? 'rotate-180' : ''"
@@ -1307,7 +1436,7 @@
 
                         <!-- Tabla de resultados en contenedor separado -->
                         <div class="w-full">
-                            <div class="bg-white rounded-lg shadow overflow-hidden">
+                            <div class="bg-white rounded-lg shadow overflow-hidden overflow-x-auto table-container">
                                 <table class="data-table min-w-full divide-y divide-gray-200">
                                     <thead class="bg-gray-50">
                                         <tr>
@@ -1948,23 +2077,20 @@
                                     </template>
 
                                     <div class="mt-2 flex items-center gap-2">
-                                        <button type="button" 
-                                                @click="editingData.columnas.push({
-                                                    id: Date.now(), 
-                                                    nombre: '', 
-                                                    caracteres: editingData.tieneDelimitador ? null : 1
-                                                })"
-                                                class="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 shadow-sm">
-                                            + Agregar al Final
-                                        </button>
-                                        <span class="text-sm text-gray-500">o insertar después de:</span>
-                                        <select @change="if($event.target.value !== '') { const idx = parseInt($event.target.value); editingData.columnas.splice(idx + 1, 0, {id: Date.now(), nombre: '', caracteres: editingData.tieneDelimitador ? null : 1}); $event.target.value = ''; }"
+                                        <span class="text-sm text-gray-500">Insertar después de:</span>
+                                        <select x-model="selectedColumnIndex"
                                                 class="px-2 py-1 text-sm border border-gray-300 rounded">
                                             <option value="">Seleccionar...</option>
                                             <template x-for="(col, idx) in editingData.columnas" :key="col.id">
                                                 <option :value="idx" x-text="`${idx + 1}. ${col.nombre || 'Sin nombre'}`"></option>
                                             </template>
                                         </select>
+                                        <button type="button" 
+                                                @click="if(selectedColumnIndex !== '' && selectedColumnIndex !== null && selectedColumnIndex !== undefined) { const idx = parseInt(selectedColumnIndex); editingData.columnas.splice(idx + 1, 0, {id: Date.now(), nombre: '', caracteres: editingData.tieneDelimitador ? null : 1}); selectedColumnIndex = ''; }"
+                                                :disabled="selectedColumnIndex === '' || selectedColumnIndex === null || selectedColumnIndex === undefined"
+                                                class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed">
+                                            Insertar
+                                        </button>
                                     </div>
                                 </div>
                             </template>
@@ -2052,19 +2178,20 @@
 
                                                 <!-- Botones agregar columna -->
                                                 <div class="mt-2 flex items-center gap-2">
-                                                    <button type="button"
-                                                            @click="seccion.columnas.push({id: Date.now(), nombre: '', caracteres: 1})"
-                                                            class="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 shadow-sm">
-                                                        + Agregar al Final
-                                                    </button>
-                                                    <span class="text-sm text-gray-500">o insertar después de:</span>
-                                                    <select @change="if($event.target.value !== '') { const idx = parseInt($event.target.value); seccion.columnas.splice(idx + 1, 0, {id: Date.now(), nombre: '', caracteres: 1}); $event.target.value = ''; }"
+                                                    <span class="text-sm text-gray-500">Insertar después de:</span>
+                                                    <select x-model="seccion.selectedColumnIndex"
                                                             class="px-2 py-1 text-sm border border-gray-300 rounded">
                                                         <option value="">Seleccionar...</option>
                                                         <template x-for="(col, idx) in seccion.columnas" :key="col.id">
                                                             <option :value="idx" x-text="`${idx + 1}. ${col.nombre || 'Sin nombre'}`"></option>
                                                         </template>
                                                     </select>
+                                                    <button type="button"
+                                                            @click="if(seccion.selectedColumnIndex !== '' && seccion.selectedColumnIndex !== null && seccion.selectedColumnIndex !== undefined) { const idx = parseInt(seccion.selectedColumnIndex); seccion.columnas.splice(idx + 1, 0, {id: Date.now(), nombre: '', caracteres: seccion.tieneDelimitador ? null : 1}); seccion.selectedColumnIndex = ''; }"
+                                                            :disabled="seccion.selectedColumnIndex === '' || seccion.selectedColumnIndex === null || seccion.selectedColumnIndex === undefined"
+                                                            class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed">
+                                                        Insertar
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
