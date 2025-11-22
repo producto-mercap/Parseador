@@ -90,8 +90,11 @@
                 copyButton.onclick = (e) => {
                     e.stopPropagation();
                     const rowData = [];
-                    tr.querySelectorAll('td:not(:first-child)').forEach(td => {
-                        rowData.push(td.textContent.trim());
+                    // Obtener datos directamente del objeto row para preservar espacios exactos
+                    this.columns.forEach(col => {
+                        const claveUnica = col.id ? `col_${col.id}` : col.nombre;
+                        const value = row[claveUnica] || row[col.nombre] || '';
+                        rowData.push(value);
                     });
                     const textToCopy = rowData.join('');
                     navigator.clipboard.writeText(textToCopy).then(() => {
@@ -829,8 +832,11 @@
                         copyButton.onclick = (e) => {
                             e.stopPropagation();
                             const rowData = [];
-                            tr.querySelectorAll('td:not(:first-child)').forEach(td => {
-                                rowData.push(td.textContent.trim());
+                            // Obtener datos directamente del objeto row para preservar espacios exactos
+                            this.columns.forEach(col => {
+                                const claveUnica = col.id ? `col_${col.id}` : col.nombre;
+                                const value = row[claveUnica] || row[col.nombre] || '';
+                                rowData.push(value);
                             });
                             const textToCopy = rowData.join('');
                             navigator.clipboard.writeText(textToCopy).then(() => {
