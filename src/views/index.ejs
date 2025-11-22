@@ -37,6 +37,11 @@
             // Limpiar encabezados existentes
             headerRow.innerHTML = '';
 
+                    // Agregar encabezado para el icono de copiar
+                    const copyHeader = document.createElement('th');
+                    copyHeader.className = 'px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12';
+                    headerRow.appendChild(copyHeader);
+
                     // Actualizar encabezados con funcionalidad de ordenamiento
                     if (this.columns && Array.isArray(this.columns)) {
                         this.columns.forEach(col => {
@@ -66,9 +71,48 @@
             tbody.innerHTML = '';
             
             // Actualizar cuerpo de la tabla
-            data.forEach(row => {
+            data.forEach((row, rowIndex) => {
                 const tr = document.createElement('tr');
-                tr.className = 'hover:bg-gray-50';
+                tr.className = 'hover:bg-gray-50 cursor-pointer';
+                tr.dataset.rowIndex = rowIndex;
+                
+                // Celda para el icono de copiar (oculto por defecto)
+                const copyTd = document.createElement('td');
+                copyTd.className = 'px-2 py-4 whitespace-nowrap';
+                const copyButton = document.createElement('button');
+                copyButton.className = 'copy-row-btn hidden p-1 text-gray-400 hover:text-blue-600 transition-colors';
+                copyButton.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                `;
+                copyButton.title = 'Copiar fila';
+                copyButton.onclick = (e) => {
+                    e.stopPropagation();
+                    const rowData = [];
+                    tr.querySelectorAll('td:not(:first-child)').forEach(td => {
+                        rowData.push(td.textContent.trim());
+                    });
+                    const textToCopy = rowData.join('');
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        copyButton.classList.add('text-green-600');
+                        setTimeout(() => {
+                            copyButton.classList.remove('text-green-600');
+                        }, 1000);
+                    });
+                };
+                copyTd.appendChild(copyButton);
+                tr.appendChild(copyTd);
+                
+                // Evento de clic en la fila para mostrar/ocultar el icono
+                tr.onclick = () => {
+                    // Ocultar todos los iconos de otras filas
+                    tbody.querySelectorAll('.copy-row-btn').forEach(btn => {
+                        btn.classList.add('hidden');
+                    });
+                    // Mostrar el icono de esta fila
+                    copyButton.classList.remove('hidden');
+                };
                 
                 this.columns.forEach(col => {
                     const td = document.createElement('td');
@@ -732,6 +776,11 @@
                     // Limpiar encabezados existentes
                     headerRow.innerHTML = '';
 
+                    // Agregar encabezado para el icono de copiar
+                    const copyHeader = document.createElement('th');
+                    copyHeader.className = 'px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12';
+                    headerRow.appendChild(copyHeader);
+
                     // Actualizar encabezados con funcionalidad de ordenamiento
                     if (this.columns && Array.isArray(this.columns)) {
                         this.columns.forEach(col => {
@@ -761,9 +810,48 @@
                     tbody.innerHTML = '';
                     
                     // Actualizar cuerpo de la tabla
-                    data.forEach(row => {
+                    data.forEach((row, rowIndex) => {
                         const tr = document.createElement('tr');
-                        tr.className = 'hover:bg-gray-50';
+                        tr.className = 'hover:bg-gray-50 cursor-pointer';
+                        tr.dataset.rowIndex = rowIndex;
+                        
+                        // Celda para el icono de copiar (oculto por defecto)
+                        const copyTd = document.createElement('td');
+                        copyTd.className = 'px-2 py-4 whitespace-nowrap';
+                        const copyButton = document.createElement('button');
+                        copyButton.className = 'copy-row-btn hidden p-1 text-gray-400 hover:text-blue-600 transition-colors';
+                        copyButton.innerHTML = `
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                        `;
+                        copyButton.title = 'Copiar fila';
+                        copyButton.onclick = (e) => {
+                            e.stopPropagation();
+                            const rowData = [];
+                            tr.querySelectorAll('td:not(:first-child)').forEach(td => {
+                                rowData.push(td.textContent.trim());
+                            });
+                            const textToCopy = rowData.join('');
+                            navigator.clipboard.writeText(textToCopy).then(() => {
+                                copyButton.classList.add('text-green-600');
+                                setTimeout(() => {
+                                    copyButton.classList.remove('text-green-600');
+                                }, 1000);
+                            });
+                        };
+                        copyTd.appendChild(copyButton);
+                        tr.appendChild(copyTd);
+                        
+                        // Evento de clic en la fila para mostrar/ocultar el icono
+                        tr.onclick = () => {
+                            // Ocultar todos los iconos de otras filas
+                            tbody.querySelectorAll('.copy-row-btn').forEach(btn => {
+                                btn.classList.add('hidden');
+                            });
+                            // Mostrar el icono de esta fila
+                            copyButton.classList.remove('hidden');
+                        };
                         
                         this.columns.forEach(col => {
                             const td = document.createElement('td');
@@ -1155,32 +1243,11 @@
             background: #666 !important;
         }
 
-        /* Asegurar que el botón del sidebar no se mueva con el scroll horizontal */
+        /* Botón del sidebar como elemento normal del flujo del documento */
         .sidebar-toggle-button {
-            position: fixed !important;
-            left: 0 !important;
-            top: 50vh !important;
-            transform: translateY(-50%) !important;
-            will-change: left;
-            z-index: 9999 !important;
-            margin: 0 !important;
-            pointer-events: auto !important;
-            /* Asegurar que el botón no se vea afectado por transformaciones de padres */
-            isolation: isolate;
-        }
-        
-        .sidebar-toggle-button:not(.collapsed) {
-            left: 256px !important;
-        }
-        
-        /* Asegurar que el contenedor principal no afecte el posicionamiento del botón */
-        .min-h-screen.flex {
             position: relative;
-        }
-        
-        /* Asegurar que el panel central contenga el scroll horizontal solo en la tabla */
-        .flex-1.p-6 {
-            overflow-x: visible;
+            flex-shrink: 0;
+            z-index: 10;
         }
 
         /* Asegurar que el modal no sea más alto que la ventana */
