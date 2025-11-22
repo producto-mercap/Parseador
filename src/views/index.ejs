@@ -37,10 +37,11 @@
             // Limpiar encabezados existentes
             headerRow.innerHTML = '';
 
-                    // Agregar encabezado para el icono de copiar
-                    const copyHeader = document.createElement('th');
-                    copyHeader.className = 'px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12';
-                    headerRow.appendChild(copyHeader);
+                    // Agregar encabezado para los iconos de acción
+                    const actionsHeader = document.createElement('th');
+                    actionsHeader.className = 'px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+                    actionsHeader.style.width = '80px';
+                    headerRow.appendChild(actionsHeader);
 
                     // Actualizar encabezados con funcionalidad de ordenamiento
                     if (this.columns && Array.isArray(this.columns)) {
@@ -76,11 +77,75 @@
                 tr.className = 'hover:bg-gray-50 cursor-pointer';
                 tr.dataset.rowIndex = rowIndex;
                 
-                // Celda para el icono de copiar (oculto por defecto)
-                const copyTd = document.createElement('td');
-                copyTd.className = 'px-2 py-4 whitespace-nowrap';
+                // Celda para los iconos de acción (ocultos por defecto)
+                const actionsTd = document.createElement('td');
+                actionsTd.className = 'px-2 py-4 whitespace-nowrap';
+                actionsTd.style.width = '80px';
+                
+                // Contenedor para los botones
+                const actionsContainer = document.createElement('div');
+                actionsContainer.className = 'flex gap-2';
+                
+                // Botón de editar
+                const editButton = document.createElement('button');
+                editButton.className = 'edit-row-btn p-1 text-gray-400 hover:text-orange-600 transition-colors';
+                editButton.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                `;
+                editButton.title = 'Editar fila';
+                editButton.onclick = (e) => {
+                    e.stopPropagation();
+                    const isEditing = tr.classList.contains('editing');
+                    
+                    if (!isEditing) {
+                        // Activar modo edición
+                        tr.classList.add('editing');
+                        editButton.classList.remove('text-gray-400', 'hover:text-orange-600');
+                        editButton.classList.add('text-orange-600');
+                        editButton.title = 'Guardar cambios';
+                        
+                        // Hacer celdas editables
+                        tr.querySelectorAll('td:not(:first-child)').forEach(td => {
+                            td.contentEditable = 'true';
+                            td.classList.add('bg-yellow-50', 'border', 'border-orange-300', 'rounded', 'px-2', 'py-1');
+                            td.style.outline = 'none';
+                        });
+                    } else {
+                        // Guardar cambios y desactivar modo edición
+                        tr.classList.remove('editing');
+                        editButton.classList.remove('text-orange-600');
+                        editButton.classList.add('text-gray-400', 'hover:text-orange-600');
+                        editButton.title = 'Editar fila';
+                        
+                        // Guardar valores editados en el objeto row
+                        tr.querySelectorAll('td:not(:first-child)').forEach((td, index) => {
+                            const col = this.columns[index];
+                            if (col) {
+                                const claveUnica = col.id ? `col_${col.id}` : col.nombre;
+                                // Preservar espacios exactos del contenido editado
+                                row[claveUnica] = td.textContent || '';
+                                // Actualizar también por nombre si es diferente
+                                if (claveUnica !== col.nombre) {
+                                    row[col.nombre] = td.textContent || '';
+                                }
+                            }
+                            td.contentEditable = 'false';
+                            td.classList.remove('bg-yellow-50', 'border', 'border-orange-300', 'rounded', 'px-2', 'py-1');
+                        });
+                        
+                        // Feedback visual
+                        editButton.classList.add('text-green-600');
+                        setTimeout(() => {
+                            editButton.classList.remove('text-green-600');
+                        }, 1000);
+                    }
+                };
+                
+                // Botón de copiar
                 const copyButton = document.createElement('button');
-                copyButton.className = 'copy-row-btn hidden p-1 text-gray-400 hover:text-blue-600 transition-colors';
+                copyButton.className = 'copy-row-btn p-1 text-gray-400 hover:text-blue-600 transition-colors';
                 copyButton.innerHTML = `
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -90,11 +155,18 @@
                 copyButton.onclick = (e) => {
                     e.stopPropagation();
                     const rowData = [];
-                    // Obtener datos directamente del objeto row para preservar espacios exactos
-                    this.columns.forEach(col => {
-                        const claveUnica = col.id ? `col_${col.id}` : col.nombre;
-                        const value = row[claveUnica] || row[col.nombre] || '';
-                        rowData.push(value);
+                    // Obtener datos: primero de las celdas editadas, luego del objeto row original
+                    tr.querySelectorAll('td:not(:first-child)').forEach((td, index) => {
+                        const col = this.columns[index];
+                        if (col) {
+                            // Si está en modo edición, usar el contenido de la celda
+                            // Si no, usar el valor del objeto row (que puede haber sido editado)
+                            const claveUnica = col.id ? `col_${col.id}` : col.nombre;
+                            const value = tr.classList.contains('editing') 
+                                ? td.textContent || ''
+                                : (row[claveUnica] || row[col.nombre] || '');
+                            rowData.push(value);
+                        }
                     });
                     const textToCopy = rowData.join('');
                     navigator.clipboard.writeText(textToCopy).then(() => {
@@ -104,18 +176,13 @@
                         }, 1000);
                     });
                 };
-                copyTd.appendChild(copyButton);
-                tr.appendChild(copyTd);
                 
-                // Evento de clic en la fila para mostrar/ocultar el icono
-                tr.onclick = () => {
-                    // Ocultar todos los iconos de otras filas
-                    tbody.querySelectorAll('.copy-row-btn').forEach(btn => {
-                        btn.classList.add('hidden');
-                    });
-                    // Mostrar el icono de esta fila
-                    copyButton.classList.remove('hidden');
-                };
+                actionsContainer.appendChild(editButton);
+                actionsContainer.appendChild(copyButton);
+                actionsTd.appendChild(actionsContainer);
+                tr.appendChild(actionsTd);
+                
+                // Los iconos están siempre visibles, no necesitan evento de clic en la fila
                 
                 this.columns.forEach(col => {
                     const td = document.createElement('td');
@@ -779,10 +846,11 @@
                     // Limpiar encabezados existentes
                     headerRow.innerHTML = '';
 
-                    // Agregar encabezado para el icono de copiar
-                    const copyHeader = document.createElement('th');
-                    copyHeader.className = 'px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12';
-                    headerRow.appendChild(copyHeader);
+                    // Agregar encabezado para los iconos de acción
+                    const actionsHeader = document.createElement('th');
+                    actionsHeader.className = 'px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+                    actionsHeader.style.width = '80px';
+                    headerRow.appendChild(actionsHeader);
 
                     // Actualizar encabezados con funcionalidad de ordenamiento
                     if (this.columns && Array.isArray(this.columns)) {
@@ -818,11 +886,75 @@
                         tr.className = 'hover:bg-gray-50 cursor-pointer';
                         tr.dataset.rowIndex = rowIndex;
                         
-                        // Celda para el icono de copiar (oculto por defecto)
-                        const copyTd = document.createElement('td');
-                        copyTd.className = 'px-2 py-4 whitespace-nowrap';
+                        // Celda para los iconos de acción (ocultos por defecto)
+                        const actionsTd = document.createElement('td');
+                        actionsTd.className = 'px-2 py-4 whitespace-nowrap';
+                        actionsTd.style.width = '80px';
+                        
+                        // Contenedor para los botones
+                        const actionsContainer = document.createElement('div');
+                        actionsContainer.className = 'flex gap-2';
+                        
+                        // Botón de editar
+                        const editButton = document.createElement('button');
+                        editButton.className = 'edit-row-btn p-1 text-gray-400 hover:text-orange-600 transition-colors';
+                        editButton.innerHTML = `
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        `;
+                        editButton.title = 'Editar fila';
+                        editButton.onclick = (e) => {
+                            e.stopPropagation();
+                            const isEditing = tr.classList.contains('editing');
+                            
+                            if (!isEditing) {
+                                // Activar modo edición
+                                tr.classList.add('editing');
+                                editButton.classList.remove('text-gray-400', 'hover:text-orange-600');
+                                editButton.classList.add('text-orange-600');
+                                editButton.title = 'Guardar cambios';
+                                
+                                // Hacer celdas editables
+                                tr.querySelectorAll('td:not(:first-child)').forEach(td => {
+                                    td.contentEditable = 'true';
+                                    td.classList.add('bg-yellow-50', 'border', 'border-orange-300', 'rounded', 'px-2', 'py-1');
+                                    td.style.outline = 'none';
+                                });
+                            } else {
+                                // Guardar cambios y desactivar modo edición
+                                tr.classList.remove('editing');
+                                editButton.classList.remove('text-orange-600');
+                                editButton.classList.add('text-gray-400', 'hover:text-orange-600');
+                                editButton.title = 'Editar fila';
+                                
+                                // Guardar valores editados en el objeto row
+                                tr.querySelectorAll('td:not(:first-child)').forEach((td, index) => {
+                                    const col = this.columns[index];
+                                    if (col) {
+                                        const claveUnica = col.id ? `col_${col.id}` : col.nombre;
+                                        // Preservar espacios exactos del contenido editado
+                                        row[claveUnica] = td.textContent || '';
+                                        // Actualizar también por nombre si es diferente
+                                        if (claveUnica !== col.nombre) {
+                                            row[col.nombre] = td.textContent || '';
+                                        }
+                                    }
+                                    td.contentEditable = 'false';
+                                    td.classList.remove('bg-yellow-50', 'border', 'border-orange-300', 'rounded', 'px-2', 'py-1');
+                                });
+                                
+                                // Feedback visual
+                                editButton.classList.add('text-green-600');
+                                setTimeout(() => {
+                                    editButton.classList.remove('text-green-600');
+                                }, 1000);
+                            }
+                        };
+                        
+                        // Botón de copiar
                         const copyButton = document.createElement('button');
-                        copyButton.className = 'copy-row-btn hidden p-1 text-gray-400 hover:text-blue-600 transition-colors';
+                        copyButton.className = 'copy-row-btn p-1 text-gray-400 hover:text-blue-600 transition-colors';
                         copyButton.innerHTML = `
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -832,11 +964,18 @@
                         copyButton.onclick = (e) => {
                             e.stopPropagation();
                             const rowData = [];
-                            // Obtener datos directamente del objeto row para preservar espacios exactos
-                            this.columns.forEach(col => {
-                                const claveUnica = col.id ? `col_${col.id}` : col.nombre;
-                                const value = row[claveUnica] || row[col.nombre] || '';
-                                rowData.push(value);
+                            // Obtener datos: primero de las celdas editadas, luego del objeto row original
+                            tr.querySelectorAll('td:not(:first-child)').forEach((td, index) => {
+                                const col = this.columns[index];
+                                if (col) {
+                                    // Si está en modo edición, usar el contenido de la celda
+                                    // Si no, usar el valor del objeto row (que puede haber sido editado)
+                                    const claveUnica = col.id ? `col_${col.id}` : col.nombre;
+                                    const value = tr.classList.contains('editing') 
+                                        ? td.textContent || ''
+                                        : (row[claveUnica] || row[col.nombre] || '');
+                                    rowData.push(value);
+                                }
                             });
                             const textToCopy = rowData.join('');
                             navigator.clipboard.writeText(textToCopy).then(() => {
@@ -846,18 +985,13 @@
                                 }, 1000);
                             });
                         };
-                        copyTd.appendChild(copyButton);
-                        tr.appendChild(copyTd);
                         
-                        // Evento de clic en la fila para mostrar/ocultar el icono
-                        tr.onclick = () => {
-                            // Ocultar todos los iconos de otras filas
-                            tbody.querySelectorAll('.copy-row-btn').forEach(btn => {
-                                btn.classList.add('hidden');
-                            });
-                            // Mostrar el icono de esta fila
-                            copyButton.classList.remove('hidden');
-                        };
+                        actionsContainer.appendChild(editButton);
+                        actionsContainer.appendChild(copyButton);
+                        actionsTd.appendChild(actionsContainer);
+                        tr.appendChild(actionsTd);
+                        
+                        // Los iconos están siempre visibles, no necesitan evento de clic en la fila
                         
                         this.columns.forEach(col => {
                             const td = document.createElement('td');
