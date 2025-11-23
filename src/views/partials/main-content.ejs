@@ -3,11 +3,11 @@
     <h2 class="text-2xl font-medium text-gray-700 mb-4" x-text="selectedParser.nombre"></h2>
 
     <!-- Área de entrada y botones -->
-    <div class="flex gap-4 w-full">
-        <!-- Grupo de botones -->
-        <div class="inline-flex rounded-lg border border-gray-100 bg-gray-100 p-1">
+    <div class="w-full">
+        <!-- Tira de botones unidos -->
+        <div class="google-button-group">
             <!-- 1. Botón Examinar -->
-            <label class="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-gray-700 hover:bg-white hover:text-gray-900 cursor-pointer">
+            <label class="google-action-btn google-action-btn--secondary cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                 </svg>
@@ -18,7 +18,7 @@
             <!-- 2. Botón Limpiar -->
             <button
                 @click="limpiarDatos"
-                class="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-gray-700 hover:bg-white hover:text-gray-900">
+                class="google-action-btn google-action-btn--secondary">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 19a2 2 0 002 2h14a2 2 0 002-2v-1M9 12l2-2m0 0l2-2M11 10l-2 2m0 0l-2 2m2-2l2 2" />
                 </svg>
@@ -28,7 +28,7 @@
             <!-- 3. Botón Exportar -->
             <button
                 @click="exportarXLS"
-                class="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-white bg-green-600 hover:bg-green-700">
+                class="google-action-btn google-action-btn--secondary">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -39,7 +39,8 @@
             <button
                 @click="parsearContenido"
                 :disabled="isParsing"
-                class="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed">
+                class="google-action-btn google-action-btn--primary"
+                :class="{'opacity-50 cursor-not-allowed': isParsing}">
                 <svg x-show="!isParsing" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
