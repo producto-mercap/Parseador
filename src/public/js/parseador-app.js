@@ -18,6 +18,7 @@ document.addEventListener('alpine:init', () => {
                     setupMainPanelScrollDetection();
                 }
             }, 100);
+            
         },
         showModal: false,
         showEditModal: false,

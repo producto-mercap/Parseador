@@ -1,5 +1,12 @@
 <!-- Tabla de resultados en contenedor separado -->
 <div class="w-full relative">
+    <!-- Scrollbar superior duplicada (sticky) -->
+    <div class="table-scrollbar-top sticky top-0 z-40 bg-white border-b border-gray-200" id="tableScrollbarTop" style="display: none;">
+        <div class="overflow-x-auto" id="tableScrollbarTopInner" style="height: 40px;">
+            <div id="tableScrollbarTopContent" style="height: 1px;"></div>
+        </div>
+    </div>
+
     <div class="bg-white rounded-lg shadow overflow-hidden overflow-x-auto table-container" id="tableScrollContainer">
         <table class="data-table min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -13,15 +20,26 @@
         </table>
     </div>
 
-    <!-- Botón de scroll a la izquierda -->
+    <!-- Botones de navegación horizontal - Siempre visibles y fijos -->
     <button
         id="scrollLeftButton"
-        onclick="document.getElementById('tableScrollContainer').scrollTo({ left: 0, behavior: 'smooth' })"
-        class="absolute left-4 bottom-4 z-50 w-10 h-10 bg-gray-800 hover:bg-gray-900 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 opacity-0 pointer-events-none"
+        onclick="scrollTableHorizontal('left')"
+        class="table-nav-button table-nav-button-left"
         style="display: none;"
-        title="Ir al inicio">
+        title="Desplazar a la izquierda">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+    </button>
+    
+    <button
+        id="scrollRightButton"
+        onclick="scrollTableHorizontal('right')"
+        class="table-nav-button table-nav-button-right"
+        style="display: none;"
+        title="Desplazar a la derecha">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
     </button>
 </div>

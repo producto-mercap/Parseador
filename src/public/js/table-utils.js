@@ -3,6 +3,168 @@
  * Funciones auxiliares para crear y actualizar tablas dinámicamente
  */
 
+
+/**
+ * Sincroniza la scrollbar superior con la inferior
+ */
+function setupTableScrollSync() {
+    const tableContainer = document.getElementById('tableScrollContainer');
+    const scrollbarTop = document.getElementById('tableScrollbarTop');
+    const scrollbarTopInner = document.getElementById('tableScrollbarTopInner');
+    const scrollbarTopContent = document.getElementById('tableScrollbarTopContent');
+    
+    if (!tableContainer || !scrollbarTop || !scrollbarTopInner || !scrollbarTopContent) {
+        return;
+    }
+
+    // Sincronizar ancho del contenido
+    function syncScrollbarWidth() {
+        const table = tableContainer.querySelector('.data-table');
+        if (table) {
+            scrollbarTopContent.style.width = table.scrollWidth + 'px';
+            const hasHorizontalScroll = tableContainer.scrollWidth > tableContainer.clientWidth;
+            scrollbarTop.style.display = hasHorizontalScroll ? 'block' : 'none';
+        }
+    }
+
+    // Sincronizar scroll: inferior -> superior
+    tableContainer.addEventListener('scroll', () => {
+        scrollbarTopInner.scrollLeft = tableContainer.scrollLeft;
+        updateNavButtons();
+    });
+
+    // Sincronizar scroll: superior -> inferior
+    scrollbarTopInner.addEventListener('scroll', () => {
+        tableContainer.scrollLeft = scrollbarTopInner.scrollLeft;
+        updateNavButtons();
+    });
+
+    // Sincronizar ancho cuando cambia el tamaño de la tabla
+    const resizeObserver = new ResizeObserver(() => {
+        syncScrollbarWidth();
+        updateNavButtons();
+    });
+    
+    resizeObserver.observe(tableContainer);
+    
+    // Inicializar
+    syncScrollbarWidth();
+    
+    // Re-sincronizar después de actualizar la tabla
+    setTimeout(syncScrollbarWidth, 100);
+}
+
+/**
+ * Actualiza la visibilidad de los botones de navegación
+ */
+function updateNavButtons() {
+    const tableContainer = document.getElementById('tableScrollContainer');
+    const scrollLeftBtn = document.getElementById('scrollLeftButton');
+    const scrollRightBtn = document.getElementById('scrollRightButton');
+    
+    if (!tableContainer || !scrollLeftBtn || !scrollRightBtn) {
+        return;
+    }
+
+    const scrollLeft = tableContainer.scrollLeft;
+    const maxScrollLeft = tableContainer.scrollWidth - tableContainer.clientWidth;
+    const hasHorizontalScroll = maxScrollLeft > 0;
+
+    if (hasHorizontalScroll) {
+        scrollLeftBtn.classList.add('show');
+        scrollRightBtn.classList.add('show');
+        
+        // Ocultar botón izquierdo si está al inicio
+        if (scrollLeft <= 5) {
+            scrollLeftBtn.classList.remove('show');
+        }
+        
+        // Ocultar botón derecho si está al final
+        if (scrollLeft >= maxScrollLeft - 5) {
+            scrollRightBtn.classList.remove('show');
+        }
+    } else {
+        scrollLeftBtn.classList.remove('show');
+        scrollRightBtn.classList.remove('show');
+    }
+}
+
+/**
+ * Desplaza la tabla horizontalmente
+ */
+function scrollTableHorizontal(direction) {
+    const tableContainer = document.getElementById('tableScrollContainer');
+    if (!tableContainer) {
+        console.error('No se encontró tableScrollContainer');
+        return;
+    }
+    
+    const currentScroll = tableContainer.scrollLeft;
+    const containerWidth = tableContainer.clientWidth;
+    const scrollWidth = tableContainer.scrollWidth;
+    const maxScroll = scrollWidth - containerWidth;
+    
+    console.log('Scroll info:', {
+        currentScroll,
+        containerWidth,
+        scrollWidth,
+        maxScroll,
+        direction
+    });
+    
+    if (direction === 'left') {
+        // Botón izquierdo: llevar al inicio con un solo click
+        tableContainer.scrollLeft = 0;
+        
+        // Sincronizar con scrollbar superior si existe
+        const scrollbarTopInner = document.getElementById('tableScrollbarTopInner');
+        if (scrollbarTopInner) {
+            scrollbarTopInner.scrollLeft = 0;
+        }
+    } else {
+        // Botón derecho: mover un poco por cada click (incrementos pequeños)
+        const scrollAmount = 300; // píxeles a desplazar por click
+        const newScroll = Math.min(maxScroll, currentScroll + scrollAmount);
+        
+        console.log('Desplazando:', {
+            scrollAmount,
+            currentScroll,
+            newScroll,
+            maxScroll
+        });
+        
+        tableContainer.scrollLeft = newScroll;
+        
+        // Sincronizar con scrollbar superior si existe
+        const scrollbarTopInner = document.getElementById('tableScrollbarTopInner');
+        if (scrollbarTopInner) {
+            scrollbarTopInner.scrollLeft = newScroll;
+        }
+    }
+    
+    // Actualizar botones después de un pequeño delay
+    setTimeout(() => {
+        if (window.updateNavButtons) {
+            updateNavButtons();
+        }
+    }, 50);
+}
+
+/**
+ * Habilita scroll horizontal con Shift + rueda del mouse
+ */
+function setupHorizontalWheelScroll() {
+    const tableContainer = document.getElementById('tableScrollContainer');
+    if (!tableContainer) return;
+
+    tableContainer.addEventListener('wheel', (e) => {
+        if (e.shiftKey) {
+            e.preventDefault();
+            tableContainer.scrollLeft += e.deltaY;
+        }
+    }, { passive: false });
+}
+
 /**
  * Actualiza la tabla con los datos proporcionados
  * @param {Array} data - Array de objetos con los datos de las filas
@@ -189,6 +351,13 @@ function updateTable(data, columns, onSort, tableDataRef) {
     // Configurar detección de scroll horizontal
     setupScrollDetection();
     
+    // Inicializar funcionalidades de scroll mejoradas
+    setTimeout(() => {
+        if (window.setupTableScrollSync) setupTableScrollSync();
+        if (window.setupHorizontalWheelScroll) setupHorizontalWheelScroll();
+        if (window.updateNavButtons) updateNavButtons();
+    }, 100);
+    
     // Guardar datos para ordenamiento
     if (tableDataRef) {
         tableDataRef.data = data;
@@ -287,3 +456,7 @@ function setupScrollDetection() {
 window.updateTable = updateTable;
 window.sortTable = sortTable;
 window.setupScrollDetection = setupScrollDetection;
+window.setupTableScrollSync = setupTableScrollSync;
+window.updateNavButtons = updateNavButtons;
+window.scrollTableHorizontal = scrollTableHorizontal;
+window.setupHorizontalWheelScroll = setupHorizontalWheelScroll;

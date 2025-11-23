@@ -33,10 +33,10 @@
     <div class="min-h-screen flex items-stretch relative">
         <%- include('../partials/sidebar') %>
         
-        <!-- Botón para expandir/contraer panel lateral (siempre visible) -->
+        <!-- Botón para expandir/contraer panel lateral (siempre visible y fijo) -->
         <button
             @click="sidebarCollapsed = !sidebarCollapsed"
-            class="absolute top-1/2 -translate-y-1/2 z-20 w-6 h-12 bg-gray-50 hover:bg-gray-100 border border-gray-200 flex items-center justify-center transition-all shadow-md"
+            class="fixed top-1/2 -translate-y-1/2 z-20 w-6 h-12 bg-gray-50 hover:bg-gray-100 border border-gray-200 flex items-center justify-center transition-all shadow-md"
             :class="sidebarCollapsed ? 'left-0 rounded-r-lg' : 'left-64 rounded-l-lg'"
             :style="sidebarCollapsed ? 'left: 0;' : 'left: 256px;'"
             title="Expandir/Contraer panel">
