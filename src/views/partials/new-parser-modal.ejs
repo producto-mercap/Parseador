@@ -1,0 +1,497 @@
+<!-- Modal de nuevo parseador -->
+<div 
+    x-show="showModal" 
+    class="fixed inset-0 z-50 overflow-y-auto"
+    style="display: none;"
+>
+    <div class="min-h-screen px-4 text-center">
+        <!-- Overlay -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+        <div class="inline-block w-full max-w-3xl p-6 my-8 text-left align-middle transition-all transform bg-white shadow-xl rounded-lg overflow-y-auto max-h-[90vh]">
+            <!-- Contenido del modal -->
+            <div class="space-y-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-900">Nuevo Parseador</h3>
+                    <button @click="showModal = false" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <form id="parserForm" 
+                    autocomplete="off" 
+                    x-data="{ 
+                        tieneDelimitador: false,
+                        incluyeSecciones: false,
+                        cantidadColumnas: 0,
+                        cantidadSecciones: 1,
+                        seccionesData: {},
+                        initSeccion(index) {
+                            if (!this.seccionesData[index]) {
+                                this.seccionesData[index] = {
+                                    cantidadColumnas: 0,
+                                    tieneDelimitador: false,
+                                    caracteres: {}
+                                };
+                            }
+                            return this.seccionesData[index];
+                        }
+                    }"
+                    @submit.prevent="async function($event) {
+                        const formData = new FormData($event.target);
+                        const data = {
+                            nombre: formData.get('nombre'),
+                            tieneDelimitador: tieneDelimitador,
+                            delimitador: formData.get('delimitador'),
+                            cantidadColumnas: parseInt(cantidadColumnas),
+                            incluyeSecciones: incluyeSecciones,
+                            esFormatoJson: formData.get('esFormatoJson') === 'on',
+                            columnas: [],
+                            secciones: []
+                        };
+                        
+                        if (data.esFormatoJson) {
+                            try {
+                                const response = await fetch('/parser', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(data)
+                                });
+                                
+                                const result = await response.json();
+                                console.log('Respuesta del servidor:', result);
+                                
+                                if (result.success) {
+                                    showModal = false;
+                                    await actualizarParsers();
+                                } else {
+                                    throw new Error(result.error || 'Error al crear el parseador');
+                                }
+                            } catch (error) {
+                                console.error('Error al crear parseador:', error);
+                                alert('Error al crear el parseador: ' + error.message);
+                            }
+                            return;
+                        }
+                        
+                        if (!incluyeSecciones) {
+                            for (let i = 0; i < data.cantidadColumnas; i++) {
+                                data.columnas.push({
+                                    nombre: formData.get(`columna_${i}`),
+                                    caracteres: tieneDelimitador ? null : parseInt(formData.get(`caracteres_${i}`))
+                                });
+                            }
+                        } else {
+                            for (let i = 0; i < data.cantidadSecciones; i++) {
+                                const seccion = {
+                                    nombre: formData.get(`seccion_${i}_nombre`),
+                                    header: formData.get(`seccion_${i}_header`),
+                                    tieneDelimitador: formData.get(`seccion_${i}_tiene_delimitador`) === 'on',
+                                    delimitador: formData.get(`seccion_${i}_delimitador`) || ';',
+                                    cantidadColumnas: parseInt(formData.get(`seccion_${i}_cantidad_columnas`)),
+                                    columnas: []
+                                };
+                                
+                                for (let j = 0; j < seccion.cantidadColumnas; j++) {
+                                    seccion.columnas.push({
+                                        nombre: formData.get(`seccion_${i}_columna_${j}`),
+                                        caracteres: seccion.tieneDelimitador ? null : parseInt(formData.get(`seccion_${i}_caracteres_${j}`))
+                                    });
+                                }
+                                
+                                data.secciones.push(seccion);
+                            }
+                        }
+                        
+                        try {
+                            const response = await fetch('/parser', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(data)
+                            });
+                            
+                            const result = await response.json();
+                            if (result.success) {
+                                showModal = false;
+                                await actualizarParsers();
+                            } else {
+                                alert('Error al crear el parseador: ' + result.error);
+                            }
+                        } catch (error) {
+                            alert('Error al crear el parseador: ' + error.message);
+                        }
+                    }">
+                    <!-- Datos básicos -->
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="flex-1 relative">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Nombre Parseador
+                                </label>
+                                <input 
+                                    type="text" 
+                                    name="nombre" 
+                                    class="w-full rounded-lg border-2 border-gray-300 p-4 pe-12 text-sm shadow-sm focus:ring-0 focus:border-blue-500 outline-none"
+                                    autocomplete="off"
+                                    placeholder="Nombre del parseador" 
+                                    required>
+                            </div>
+                            
+                            <div class="flex items-center space-x-4">
+                                <label class="switch">
+                                    <input 
+                                        type="checkbox" 
+                                        x-model="incluyeSecciones"
+                                    >
+                                    <span class="slider"></span>
+                                </label>
+                                <span class="text-sm font-medium text-gray-800">
+                                    Incluye Secciones
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="esFormatoJson" class="form-checkbox h-5 w-5 text-blue-600"
+                                    x-model="esFormatoJson"
+                                    @change="$event.target.checked ? $event.target.form.tieneDelimitador.checked = false : null">
+                                <span class="text-gray-700">Formato JSON</span>
+                            </label>
+                        </div>
+
+                        <template x-if="!incluyeSecciones && !esFormatoJson">
+                            <!-- Configuración parseador simple -->
+                            <div class="space-y-6">
+                                <div class="flex items-center space-x-4">
+                                    <label class="switch">
+                                        <input 
+                                            type="checkbox" 
+                                            x-model="tieneDelimitador"
+                                        >
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span class="text-sm font-medium text-gray-800">
+                                        Usar Delimitador
+                                    </span>
+                                </div>
+
+                                <div x-show="tieneDelimitador">
+                                    <label class="block text-sm font-medium mb-1">Delimitador</label>
+                                    <input 
+                                        type="text" 
+                                        name="delimitador" 
+                                        class="w-20 h-10 rounded-lg border-2 border-gray-300 p-2 text-sm text-center shadow-sm focus:ring-0 focus:border-blue-500 outline-none"
+                                        autocomplete="off"
+                                        value=";"
+                                        x-init="$el.value = ';'"
+                                        :placeholder="';'"
+                                    >
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Cantidad de Columnas</label>
+                                    <div class="flex items-center border border-gray-300 rounded-md number-input-container">
+                                        <button 
+                                            type="button"
+                                            @click="cantidadColumnas = Math.max(1, parseInt(cantidadColumnas || 1) - 1)"
+                                            class="number-button leading-10 text-gray-600 transition hover:opacity-75 border-r border-gray-300">
+                                            &minus;
+                                        </button>
+
+                                        <input
+                                            type="number"
+                                            x-model="cantidadColumnas"
+                                            class="number-input h-10 border-transparent text-center [-moz-appearance:_textfield] sm:text-sm [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                            min="1"
+                                        >
+
+                                        <button
+                                            type="button"
+                                            @click="cantidadColumnas = parseInt(cantidadColumnas || 1) + 1"
+                                            class="number-button leading-10 text-gray-600 transition hover:opacity-75 border-l border-gray-300">
+                                            &plus;
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Campos dinámicos para columnas -->
+                                <template x-for="(_, index) in Array.from({ length: cantidadColumnas })" :key="index">
+                                    <div class="space-y-2">
+                                        <input 
+                                            :name="'columna_' + index" 
+                                            type="text" 
+                                            class="w-full rounded-lg border-2 border-gray-300 p-2 text-sm shadow-sm focus:ring-0 focus:border-blue-500 outline-none"
+                                            autocomplete="off"
+                                            :placeholder="'Nombre columna ' + (index + 1)" 
+                                            required>
+                                        
+                                        <template x-if="!tieneDelimitador">
+                                            <div class="flex items-center gap-2">
+                                                <div class="flex items-center border border-gray-300 rounded-md number-input-container">
+                                                    <button 
+                                                        type="button"
+                                                        @click="let input = $el.nextElementSibling; input.value = Math.max(1, parseInt(input.value || 1) - 1); input.dispatchEvent(new Event('input'))"
+                                                        class="number-button leading-10 text-gray-600 transition hover:opacity-75 border-r border-gray-300">
+                                                        &minus;
+                                                    </button>
+
+                                                    <input
+                                                        type="number"
+                                                        :name="'caracteres_' + index"
+                                                        class="number-input h-10 border-transparent text-center [-moz-appearance:_textfield] sm:text-sm [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                                        min="1"
+                                                    >
+
+                                                    <button
+                                                        type="button"
+                                                        @click="let input = $el.previousElementSibling; input.value = parseInt(input.value || 1) + 1; input.dispatchEvent(new Event('input'))"
+                                                        class="number-button leading-10 text-gray-600 transition hover:opacity-75 border-l border-gray-300">
+                                                        &plus;
+                                                    </button>
+                                            </div>
+                                            <label class="text-sm font-medium text-gray-700">Cantidad de Caracteres</label>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Configuración de secciones -->
+                        <template x-if="incluyeSecciones">
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Cantidad de Secciones</label>
+                                    <div class="inline-flex items-center rounded-lg border border-gray-300 overflow-hidden">
+                                        <button 
+                                            type="button"
+                                            @click="cantidadSecciones = Math.max(1, parseInt(cantidadSecciones) - 1)"
+                                            class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 focus:outline-none border-r border-gray-300"
+                                        >
+                                            -
+                                        </button>
+
+                                        <input
+                                            type="number"
+                                            x-model="cantidadSecciones"
+                                            class="w-14 h-8 text-center border-transparent focus:ring-0 focus:outline-none [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                            min="1"
+                                        >
+
+                                        <button
+                                            type="button"
+                                            @click="cantidadSecciones = parseInt(cantidadSecciones) + 1"
+                                            class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 focus:outline-none border-l border-gray-300"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Tabs de secciones -->
+                                <div x-data="{ activeTab: 0 }" class="border rounded-lg">
+                                    <!-- Navegación de tabs -->
+                                    <div class="flex border-b bg-gray-50">
+                                        <template x-for="(seccion, index) in parseInt(cantidadSecciones)" :key="index">
+                                            <button 
+                                                type="button"
+                                                @click="activeTab = index"
+                                                :class="{'bg-white border-blue-500 text-blue-600': activeTab === index}"
+                                                class="px-4 py-2 border-b-2 font-medium"
+                                                x-text="`Sección ${index + 1}`">
+                                            </button>
+                                        </template>
+                                    </div>
+
+                                    <!-- Contenido de las secciones -->
+                                    <template x-for="(seccion, tabIndex) in parseInt(cantidadSecciones)" :key="tabIndex">
+                                        <div x-show="activeTab === tabIndex" 
+                                             class="p-4 space-y-4" 
+                                             x-init="initSeccion(tabIndex)">
+                                            <div class="grid grid-cols-2 gap-4">
+                                                <div class="col-span-1">
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                        Nombre Sección
+                                                    </label>
+                                                    <input 
+                                                        :name="'seccion_' + tabIndex + '_nombre'"
+                                                        type="text" 
+                                                        class="w-full rounded-lg border border-gray-300 p-2 text-sm shadow-sm focus:ring-0 focus:border-blue-500 focus:border-l-blue-500 outline-none transition-colors duration-200"
+                                                        autocomplete="off"
+                                                        :placeholder="'Nombre sección ' + (tabIndex + 1)"
+                                                        required
+                                                    >
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium mb-1">Header</label>
+                                                    <input 
+                                                        :name="'seccion_' + tabIndex + '_header'" 
+                                                        type="text" 
+                                                        class="w-full rounded-lg border-2 border-gray-300 p-2 text-sm shadow-sm focus:ring-0 focus:border-blue-500 outline-none"
+                                                        autocomplete="off"
+                                                        :placeholder="'Header sección ' + (tabIndex + 1)" 
+                                                        required>
+                                                </div>
+                                            </div>
+
+                                            <div x-data="{ tieneDelimitador: false }" class="space-y-4">
+                                                <div class="flex items-center">
+                                                    <label class="switch">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            :name="'seccion_' + tabIndex + '_tiene_delimitador'" 
+                                                            x-model="tieneDelimitador"
+                                                        >
+                                                        <span class="slider"></span>
+                                                    </label>
+                                                    <span class="text-sm font-medium text-gray-800">
+                                                        Usar Delimitador
+                                                    </span>
+                                                </div>
+
+                                                <div x-show="tieneDelimitador">
+                                                    <label class="block text-sm font-medium mb-1">Delimitador</label>
+                                                    <input 
+                                                        :name="'seccion_' + tabIndex + '_delimitador'" 
+                                                        type="text" 
+                                                        class="w-20 h-10 rounded-lg border-2 border-gray-300 p-2 text-sm text-center shadow-sm focus:ring-0 focus:border-blue-500 outline-none"
+                                                        autocomplete="off"
+                                                        value=";"
+                                                        x-init="$el.value = ';'"
+                                                        :placeholder="';'"
+                                                    >
+                                                </div>
+
+                                                <!-- Control de cantidad de columnas -->
+                                                <div class="space-y-2">
+                                                    <label class="block text-sm font-medium text-gray-700">
+                                                        Cantidad de Columnas
+                                                    </label>
+                                                    <div class="flex items-center space-x-2">
+                                                        <button 
+                                                            type="button"
+                                                            @click="seccionesData[tabIndex].cantidadColumnas = Math.max(0, parseInt(seccionesData[tabIndex].cantidadColumnas) - 1)"
+                                                            class="w-10 h-10 leading-10 text-gray-600 transition hover:opacity-75 border rounded-l border-gray-300"
+                                                        >
+                                                            -
+                                                        </button>
+                                                        
+                                                        <input 
+                                                            type="number" 
+                                                            x-model="seccionesData[tabIndex].cantidadColumnas"
+                                                            :name="'seccion_' + tabIndex + '_cantidad_columnas'"
+                                                            class="w-20 h-10 text-center border-y border-gray-300"
+                                                            min="0"
+                                                        >
+                                                        
+                                                        <button 
+                                                            type="button"
+                                                            @click="seccionesData[tabIndex].cantidadColumnas = parseInt(seccionesData[tabIndex].cantidadColumnas) + 1"
+                                                            class="w-10 h-10 leading-10 text-gray-600 transition hover:opacity-75 border rounded-r border-gray-300"
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Template para las columnas -->
+                                                <template x-for="j in seccionesData[tabIndex].cantidadColumnas" :key="j">
+                                                    <div class="grid grid-cols-2 gap-4 mt-4">
+                                                        <div class="col-span-1">
+                                                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                                Nombre Columna <span x-text="j"></span>
+                                                            </label>
+                                                            <input 
+                                                                type="text" 
+                                                                :name="'seccion_' + tabIndex + '_columna_' + (j-1)"
+                                                                class="w-full h-10 rounded-lg border-2 border-gray-300 p-2 text-sm"
+                                                                required
+                                                            >
+                                                        </div>
+                                                        
+                                                        <div class="col-span-1" x-show="!seccionesData[tabIndex].tieneDelimitador">
+                                                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                                Cantidad de Caracteres
+                                                            </label>
+                                                            <div class="inline-flex items-center h-10 rounded-lg border border-gray-300 overflow-hidden">
+                                                                <button 
+                                                                    type="button"
+                                                                    @click="
+                                                                        if (!seccionesData[tabIndex].caracteres) {
+                                                                            seccionesData[tabIndex].caracteres = {};
+                                                                        }
+                                                                        if (typeof seccionesData[tabIndex].caracteres[j-1] === 'undefined') {
+                                                                            seccionesData[tabIndex].caracteres[j-1] = 1;
+                                                                        }
+                                                                        seccionesData[tabIndex].caracteres[j-1] = Math.max(1, seccionesData[tabIndex].caracteres[j-1] - 1)"
+                                                                    class="w-8 h-full flex items-center justify-center text-gray-600 hover:bg-gray-100 focus:outline-none border-r border-gray-300"
+                                                                >
+                                                                    -
+                                                                </button>
+                                                                
+                                                                <input 
+                                                                    type="number" 
+                                                                    :name="'seccion_' + tabIndex + '_caracteres_' + (j-1)"
+                                                                    x-model.number="(() => {
+                                                                        if (!seccionesData[tabIndex].caracteres) {
+                                                                            seccionesData[tabIndex].caracteres = {};
+                                                                        }
+                                                                        if (typeof seccionesData[tabIndex].caracteres[j-1] === 'undefined') {
+                                                                            seccionesData[tabIndex].caracteres[j-1] = 1;
+                                                                        }
+                                                                        return seccionesData[tabIndex].caracteres[j-1];
+                                                                    })()"
+                                                                    class="w-14 h-full text-center focus:ring-0 focus:outline-none [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                                                    :required="!seccionesData[tabIndex].tieneDelimitador"
+                                                                    min="1"
+                                                                >
+                                                                
+                                                                <button 
+                                                                    type="button"
+                                                                    @click="
+                                                                        if (!seccionesData[tabIndex].caracteres) {
+                                                                            seccionesData[tabIndex].caracteres = {};
+                                                                        }
+                                                                        if (typeof seccionesData[tabIndex].caracteres[j-1] === 'undefined') {
+                                                                            seccionesData[tabIndex].caracteres[j-1] = 1;
+                                                                        }
+                                                                        seccionesData[tabIndex].caracteres[j-1] = seccionesData[tabIndex].caracteres[j-1] + 1"
+                                                                    class="w-8 h-full flex items-center justify-center text-gray-600 hover:bg-gray-100 focus:outline-none border-l border-gray-300"
+                                                                >
+                                                                    +
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="mt-6 flex justify-end gap-4">
+                        <button 
+                            type="button" 
+                            @click="showModal = false" 
+                            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+

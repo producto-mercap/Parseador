@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= typeof title !== 'undefined' ? title : 'Parseador de Datos' %></title>
+    
+    <!-- Librerías externas -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Estilos propios -->
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/forms.css">
+    <link rel="stylesheet" href="/css/table.css">
+    
+    <!-- JavaScript propios -->
+    <script>
+        // Inicializar parsers desde el servidor
+        window.INITIAL_PARSERS = <%- JSON.stringify(typeof parsers !== 'undefined' ? parsers : []) %>;
+    </script>
+    <script src="/js/parser-management.js"></script>
+    <script src="/js/file-handling.js"></script>
+    <script src="/js/table-utils.js"></script>
+    <script src="/js/scroll-utils.js"></script>
+    <script src="/js/alpine-components.js"></script>
+    <script src="/js/parseador-app.js"></script>
+</head>
+<body x-data="parseadorApp">
+    <%- include('../partials/header') %>
+    
+    <div class="min-h-screen flex items-stretch relative">
+        <%- include('../partials/sidebar') %>
+        
+        <!-- Botón para expandir/contraer panel lateral (siempre visible) -->
+        <button
+            @click="sidebarCollapsed = !sidebarCollapsed"
+            class="absolute top-1/2 -translate-y-1/2 z-20 w-6 h-12 bg-gray-50 hover:bg-gray-100 border border-gray-200 flex items-center justify-center transition-all shadow-md"
+            :class="sidebarCollapsed ? 'left-0 rounded-r-lg' : 'left-64 rounded-l-lg'"
+            :style="sidebarCollapsed ? 'left: 0;' : 'left: 256px;'"
+            title="Expandir/Contraer panel">
+            <!-- Flecha izquierda "<" cuando está expandido -->
+            <svg 
+                x-show="!sidebarCollapsed"
+                class="w-4 h-4 text-gray-600"
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            <!-- Flecha derecha ">" cuando está contraído -->
+            <svg 
+                x-show="sidebarCollapsed"
+                class="w-4 h-4 text-gray-600"
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+        
+        <!-- Panel central -->
+        <div class="flex-1 p-6 relative overflow-x-auto" id="mainContentPanel">
+            <!-- Botón de scroll a la izquierda (visible cuando hay scroll horizontal) -->
+            <button
+                id="scrollToLeftButton"
+                onclick="document.getElementById('mainContentPanel').scrollTo({ left: 0, behavior: 'smooth' })"
+                class="fixed left-4 bottom-4 z-50 w-12 h-12 bg-gray-800 hover:bg-gray-900 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 opacity-0 pointer-events-none"
+                style="display: none;"
+                title="Ir al inicio del panel">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            
+            <template x-if="!selectedParser">
+                <div class="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+                    <p class="text-gray-400 text-lg">Seleccionar un parseador</p>
+                </div>
+            </template>
+
+            <template x-if="selectedParser">
+                <%- include('../partials/main-content') %>
+            </template>
+        </div>
+    </div>
+
+    <%- include('../partials/new-parser-modal') %>
+    <%- include('../partials/edit-parser-modal') %>
+</body>
+</html>
+

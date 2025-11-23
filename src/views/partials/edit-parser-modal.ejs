@@ -1,0 +1,273 @@
+<!-- Modal de edición -->
+<div x-show="showEditModal" 
+     class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center"
+     @click.away="showEditModal = false">
+    <!-- Contenedor principal del modal -->
+    <div class="bg-white rounded-xl w-full max-w-2xl mx-4 flex flex-col shadow-2xl border border-gray-200" 
+         style="height: 90vh;">
+        <!-- Header fijo -->
+        <div class="flex justify-between items-center p-4 border-b border-gray-300 bg-white rounded-t-xl">
+            <h2 class="text-xl font-bold text-gray-800">Modificar Parseador</h2>
+            <div class="flex items-center gap-3">
+                <button 
+                    @click="eliminarParser($event, editingData.id)" 
+                    class="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Eliminar parseador">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+                <button @click="showEditModal = false" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Contenido scrolleable -->
+        <div class="flex-1 overflow-y-auto p-6 bg-gray-50 modal-content">
+            <template x-if="editingData">
+                <form @submit.prevent="updateParser" 
+                      id="editForm" 
+                      class="space-y-6"
+                      x-on:submit="$event.preventDefault(); updateParser($event);">
+                    <!-- Nombre del parseador -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                        <input type="text" 
+                               x-model.trim="editingData.nombre"
+                               class="w-full rounded-lg border-gray-300 bg-white shadow-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <!-- Columnas para parseador simple -->
+                    <template x-if="!editingData.incluyeSecciones">
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4 mb-4">
+                                <label class="switch">
+                                    <input type="checkbox" x-model="editingData.tieneDelimitador">
+                                    <span class="slider"></span>
+                                </label>
+                                <span class="text-sm font-medium text-gray-700">Usar Delimitador</span>
+                            </div>
+
+                            <template x-if="editingData.tieneDelimitador">
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700">Delimitador</label>
+                                    <input type="text" 
+                                           x-model="editingData.delimitador"
+                                           class="w-20 rounded-lg border-gray-300 bg-white shadow-md p-2 text-center">
+                                </div>
+                            </template>
+
+                            <!-- Columnas -->
+                            <template x-for="(columna, index) in editingData.columnas" :key="columna.id">
+                                <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 relative cursor-move hover:shadow-md transition-shadow"
+                                     draggable="true"
+                                     :data-index="index"
+                                     @dragstart="dragStart($event)"
+                                     @dragover.prevent="$event.target.closest('[draggable]').classList.add('bg-blue-50')"
+                                     @dragleave.prevent="$event.target.closest('[draggable]').classList.remove('bg-blue-50')"
+                                     @drop.prevent="dragEnd($event)"
+                                     @dragend="$event.target.closest('[draggable]').classList.remove('bg-blue-50')">
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="col-span-1">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                Nombre Columna <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" 
+                                                   x-model.trim="columna.nombre"
+                                                   class="w-full rounded-lg border-gray-300 bg-white shadow-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                   :class="{ 'border-red-500': !columna.nombre?.trim() }"
+                                                   @blur="columna.nombre = columna.nombre?.trim()">
+                                        </div>
+                                        
+                                        <div class="col-span-1" x-show="!editingData.tieneDelimitador">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                Cantidad de Caracteres <span class="text-red-500">*</span>
+                                            </label>
+                                            <div class="inline-flex items-center h-10 rounded-lg border border-gray-300 overflow-hidden"
+                                                 :class="{ 'border-red-500': !columna.caracteres || columna.caracteres < 1 }">
+                                                <button type="button"
+                                                        @click="columna.caracteres = Math.max(1, (columna.caracteres || 1) - 1)"
+                                                        class="w-8 h-full flex items-center justify-center text-gray-600 hover:bg-gray-100 focus:outline-none border-r border-gray-300">
+                                                    -
+                                                </button>
+                                                
+                                                <input type="number" 
+                                                       x-model.number="columna.caracteres"
+                                                       class="w-14 h-full text-center focus:ring-0 focus:outline-none [-moz-appearance:_textfield] sm:text-sm [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                                       min="1"
+                                                       @input="if(!$el.value || $el.value < 1) $el.value = 1">
+                                                
+                                                <button type="button"
+                                                        @click="columna.caracteres = (columna.caracteres || 1) + 1"
+                                                        class="w-8 h-full flex items-center justify-center text-gray-600 hover:bg-gray-100 focus:outline-none border-l border-gray-300">
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Botón eliminar columna -->
+                                    <button type="button" 
+                                            @click.prevent="if(editingData.columnas.length > 1) { editingData.columnas = editingData.columnas.filter((_, i) => i !== index) }"
+                                            class="absolute top-2 right-2 p-2 text-red-600 hover:text-red-800"
+                                            :class="{ 'opacity-50 cursor-not-allowed': editingData.columnas.length <= 1 }"
+                                            :disabled="editingData.columnas.length <= 1">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </template>
+
+                            <div class="mt-2 flex items-center gap-2">
+                                <span class="text-sm text-gray-500">Insertar después de:</span>
+                                <select x-model="selectedColumnIndex"
+                                        class="px-2 py-1 text-sm border border-gray-300 rounded">
+                                    <option value="">Seleccionar...</option>
+                                    <template x-for="(col, idx) in editingData.columnas" :key="col.id">
+                                        <option :value="idx" x-text="`${idx + 1}. ${col.nombre || 'Sin nombre'}`"></option>
+                                    </template>
+                                </select>
+                                <button type="button" 
+                                        @click="if(selectedColumnIndex !== '' && selectedColumnIndex !== null && selectedColumnIndex !== undefined) { const idx = parseInt(selectedColumnIndex); editingData.columnas.splice(idx + 1, 0, {id: Date.now(), nombre: '', caracteres: editingData.tieneDelimitador ? null : 1}); selectedColumnIndex = ''; }"
+                                        :disabled="selectedColumnIndex === '' || selectedColumnIndex === null || selectedColumnIndex === undefined"
+                                        class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed">
+                                    Insertar
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Template para parseador con secciones -->
+                    <template x-if="editingData.incluyeSecciones">
+                        <div class="space-y-6">
+                            <!-- Lista de secciones -->
+                            <template x-for="(seccion, secIndex) in editingData.secciones" :key="seccion.id">
+                                <div class="bg-gray-50 rounded-xl p-6 border border-gray-200 shadow-md space-y-4">
+                                    <!-- Header de sección -->
+                                    <div class="flex justify-between items-start">
+                                        <div class="space-y-4 flex-1">
+                                            <!-- Nombre y Header -->
+                                            <div class="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Sección</label>
+                                                    <input type="text" x-model="seccion.nombre"
+                                                           class="w-full rounded-lg border-gray-300 bg-white shadow-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Header</label>
+                                                    <input type="text" x-model="seccion.header"
+                                                           class="w-full rounded-lg border-gray-300 bg-white shadow-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                                </div>
+                                            </div>
+
+                                            <!-- Configuración de delimitador -->
+                                            <div class="flex items-center gap-4">
+                                                <label class="switch">
+                                                    <input type="checkbox" x-model="seccion.tieneDelimitador">
+                                                    <span class="slider"></span>
+                                                </label>
+                                                <span class="text-sm font-medium text-gray-700">Usar Delimitador</span>
+                                            </div>
+
+                                            <template x-if="seccion.tieneDelimitador">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Delimitador</label>
+                                                    <input 
+                                                        type="text" 
+                                                        x-model="seccion.delimitador"
+                                                        class="w-20 rounded-lg border-gray-300 bg-white shadow-md p-2 text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                                </div>
+                                            </template>
+                                        </div>
+
+                                        <!-- Botón eliminar sección -->
+                                        <button type="button" 
+                                                @click="editingData.secciones = editingData.secciones.filter((_, i) => i !== secIndex)"
+                                                class="p-2 text-red-600 hover:text-red-800">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <!-- Columnas de la sección -->
+                                    <div class="mt-4 space-y-4">
+                                        <template x-for="(columna, colIndex) in seccion.columnas" :key="columna.id">
+                                            <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                                                <div class="flex items-center gap-4">
+                                                    <div class="flex-1">
+                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Columna</label>
+                                                        <input type="text" x-model="columna.nombre"
+                                                               class="w-full rounded-lg border-gray-300 bg-white shadow-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                                    </div>
+                                                    <template x-if="!seccion.tieneDelimitador">
+                                                        <div class="w-32">
+                                                            <label class="block text-sm font-medium text-gray-700 mb-1">Caracteres</label>
+                                                            <input type="number" x-model="columna.caracteres"
+                                                                   class="w-full rounded-lg border-gray-300 bg-white shadow-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                                        </div>
+                                                    </template>
+                                                    <button type="button" 
+                                                            @click="seccion.columnas = seccion.columnas.filter((_, i) => i !== colIndex)"
+                                                            class="mt-6 p-2 text-red-600 hover:text-red-800">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- Botones agregar columna -->
+                                        <div class="mt-2 flex items-center gap-2">
+                                            <span class="text-sm text-gray-500">Insertar después de:</span>
+                                            <select x-model="seccion.selectedColumnIndex"
+                                                    class="px-2 py-1 text-sm border border-gray-300 rounded">
+                                                <option value="">Seleccionar...</option>
+                                                <template x-for="(col, idx) in seccion.columnas" :key="col.id">
+                                                    <option :value="idx" x-text="`${idx + 1}. ${col.nombre || 'Sin nombre'}`"></option>
+                                                </template>
+                                            </select>
+                                            <button type="button"
+                                                    @click="if(seccion.selectedColumnIndex !== '' && seccion.selectedColumnIndex !== null && seccion.selectedColumnIndex !== undefined) { const idx = parseInt(seccion.selectedColumnIndex); seccion.columnas.splice(idx + 1, 0, {id: Date.now(), nombre: '', caracteres: seccion.tieneDelimitador ? null : 1}); seccion.selectedColumnIndex = ''; }"
+                                                    :disabled="seccion.selectedColumnIndex === '' || seccion.selectedColumnIndex === null || seccion.selectedColumnIndex === undefined"
+                                                    class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed">
+                                                Insertar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </form>
+            </template>
+        </div>
+
+        <!-- Footer fijo -->
+        <div class="border-t border-gray-300 bg-gray-50 p-4 rounded-b-xl">
+            <div class="flex justify-end gap-4">
+                <button type="button" @click="showEditModal = false" 
+                        class="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 shadow-sm">
+                    Cancelar
+                </button>
+                <button type="submit" form="editForm"
+                        :disabled="saving"
+                        class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                    <template x-if="saving">
+                        <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </template>
+                    <span x-text="saving ? 'Guardando...' : 'Guardar Cambios'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,367 @@
+/* Estilos globales para formularios */
+.form-input {
+    background-color: #f9fafb;
+    border: 2px solid #d1d5db;
+    color: #111827;
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+    width: 100%;
+    padding: 0.625rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    outline: none;
+}
+
+.form-select {
+    background-color: #f9fafb;
+    border: 2px solid #d1d5db;
+    color: #4b5563;
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+    outline: none;
+    width: 100%;
+    padding: 0.625rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: border-color 0.2s;
+}
+
+.form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: none;
+}
+
+.form-checkbox {
+    width: 1rem;
+    height: 1rem;
+    color: #2563eb;
+    background-color: #f3f4f6;
+    border: 2px solid #d1d5db;
+    border-radius: 0.25rem;
+    outline: none;
+}
+
+.form-input:disabled {
+    background-color: #e5e7eb;
+    cursor: not-allowed;
+    opacity: 0.75;
+}
+
+/* Estilos para el switch */
+.switch {
+    font-size: 14px;
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 1;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0px;
+    background: #fff;
+    transition: .4s;
+    border-radius: 30px;
+    border: 1px solid #ccc;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 1.4em;
+    width: 1.4em;
+    border-radius: 16px;
+    left: 2px;
+    top: 0;
+    bottom: 0;
+    background-color: white;
+    box-shadow: 0 2px 5px #999999;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: #3b82f6;
+    border: 1px solid transparent;
+}
+
+input:checked + .slider:before {
+    transform: translateX(1.5em);
+}
+
+/* Eliminar flechas del input number */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.quantity-input:focus {
+    outline: none;
+    box-shadow: none;
+    border-color: #e5e7eb;
+}
+
+.number-input-container {
+    width: 120px;
+}
+
+.number-input {
+    width: 50px;
+}
+
+.number-button {
+    width: 35px;
+    height: 35px;
+}
+
+/* Estilos para modales */
+.modal-content {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.modal-container {
+    max-height: calc(100vh - 40px);
+    margin: 20px auto;
+}
+
+/* Estilos para tablas */
+.resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    cursor: col-resize;
+    user-select: none;
+}
+
+.resize-handle:hover,
+.resize-handle.active {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.table-fixed {
+    table-layout: fixed;
+}
+
+th, td {
+    position: relative;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Personalizar la barra de scroll vertical */
+.overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+.overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
+/* Personalizar la barra de scroll horizontal para la tabla - MUY GRANDE */
+.table-container::-webkit-scrollbar {
+    height: 40px !important;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 20px !important;
+    margin: 4px 0;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #888 !important;
+    border-radius: 20px !important;
+    min-height: 40px !important;
+    border: 4px solid #f1f1f1;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #666 !important;
+}
+
+.table-container {
+    scrollbar-width: auto !important;
+    scrollbar-color: #888 #f1f1f1 !important;
+}
+
+/* Asegurar que todos los contenedores con overflow-x-auto tengan scrollbar grande */
+div.overflow-x-auto::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar,
+[class*="overflow-x-auto"]::-webkit-scrollbar {
+    height: 40px !important;
+}
+
+div.overflow-x-auto::-webkit-scrollbar-track,
+.overflow-x-auto::-webkit-scrollbar-track,
+[class*="overflow-x-auto"]::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 20px !important;
+    margin: 4px 0;
+}
+
+div.overflow-x-auto::-webkit-scrollbar-thumb,
+.overflow-x-auto::-webkit-scrollbar-thumb,
+[class*="overflow-x-auto"]::-webkit-scrollbar-thumb {
+    background: #888 !important;
+    border-radius: 20px !important;
+    min-height: 40px !important;
+    border: 4px solid #f1f1f1;
+}
+
+div.overflow-x-auto::-webkit-scrollbar-thumb:hover,
+.overflow-x-auto::-webkit-scrollbar-thumb:hover,
+[class*="overflow-x-auto"]::-webkit-scrollbar-thumb:hover {
+    background: #666 !important;
+}
+
+[style*="overflow-x"],
+[class*="overflow-x"] {
+    scrollbar-width: auto !important;
+}
+
+[style*="overflow-x"]::-webkit-scrollbar,
+[class*="overflow-x"]::-webkit-scrollbar {
+    height: 40px !important;
+}
+
+[style*="overflow-x"]::-webkit-scrollbar-track,
+[class*="overflow-x"]::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 20px !important;
+    margin: 4px 0;
+}
+
+[style*="overflow-x"]::-webkit-scrollbar-thumb,
+[class*="overflow-x"]::-webkit-scrollbar-thumb {
+    background: #888 !important;
+    border-radius: 20px !important;
+    min-height: 40px !important;
+    border: 4px solid #f1f1f1;
+}
+
+[style*="overflow-x"]::-webkit-scrollbar-thumb:hover,
+[class*="overflow-x"]::-webkit-scrollbar-thumb:hover {
+    background: #666 !important;
+}
+
+/* Botón del sidebar */
+.sidebar-toggle-button {
+    position: relative;
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+/* Estilos para textarea */
+.textarea-container {
+    position: relative;
+    width: 100%;
+}
+
+.resize-textarea {
+    resize: none;
+    min-height: 200px;
+    width: 100%;
+}
+
+.resize-handle {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: transparent;
+    cursor: ns-resize;
+}
+
+.resize-handle:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.textarea-container.resizing textarea {
+    pointer-events: none;
+}
+
+.custom-textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    resize: vertical;
+    overflow: auto;
+    line-height: 1.5;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.custom-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.custom-textarea::-webkit-resizer {
+    display: none;
+}
+
+.custom-textarea:hover {
+    border-bottom: 2px solid #3b82f6;
+}
+
+/* Botón de scroll a la izquierda */
+#scrollLeftButton {
+    transition: opacity 0.3s ease, transform 0.2s ease;
+}
+
+#scrollLeftButton:hover {
+    transform: scale(1.1);
+}

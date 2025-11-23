@@ -1,0 +1,145 @@
+/**
+ * Estilos para tablas y scrollbars
+ */
+
+.resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    cursor: col-resize;
+    user-select: none;
+}
+
+.resize-handle:hover,
+.resize-handle.active {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.table-fixed {
+    table-layout: fixed;
+}
+
+th, td {
+    position: relative;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Personalizar la barra de scroll */
+.overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+/* Ocultar scrollbar en Firefox */
+.overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
+/* Personalizar la barra de scroll horizontal para la tabla - MUY GRANDE */
+.table-container::-webkit-scrollbar {
+    height: 40px !important;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 20px !important;
+    margin: 4px 0;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #888 !important;
+    border-radius: 20px !important;
+    min-height: 40px !important;
+    border: 4px solid #f1f1f1;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #666 !important;
+}
+
+/* Para Firefox - scrollbar más grande */
+.table-container {
+    scrollbar-width: auto !important;
+    scrollbar-color: #888 #f1f1f1 !important;
+}
+
+/* Asegurar que todos los contenedores con overflow-x-auto tengan scrollbar grande */
+div.overflow-x-auto::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar,
+[class*="overflow-x-auto"]::-webkit-scrollbar {
+    height: 40px !important;
+}
+
+div.overflow-x-auto::-webkit-scrollbar-track,
+.overflow-x-auto::-webkit-scrollbar-track,
+[class*="overflow-x-auto"]::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 20px !important;
+    margin: 4px 0;
+}
+
+div.overflow-x-auto::-webkit-scrollbar-thumb,
+.overflow-x-auto::-webkit-scrollbar-thumb,
+[class*="overflow-x-auto"]::-webkit-scrollbar-thumb {
+    background: #888 !important;
+    border-radius: 20px !important;
+    min-height: 40px !important;
+    border: 4px solid #f1f1f1;
+}
+
+div.overflow-x-auto::-webkit-scrollbar-thumb:hover,
+.overflow-x-auto::-webkit-scrollbar-thumb:hover,
+[class*="overflow-x-auto"]::-webkit-scrollbar-thumb:hover {
+    background: #666 !important;
+}
+
+/* Estilo global para scrollbars horizontales - aplicar a TODOS los elementos */
+/* Solo aplicar a elementos que tienen overflow-x */
+[style*="overflow-x"],
+[class*="overflow-x"] {
+    scrollbar-width: auto !important;
+}
+
+[style*="overflow-x"]::-webkit-scrollbar,
+[class*="overflow-x"]::-webkit-scrollbar {
+    height: 40px !important;
+}
+
+[style*="overflow-x"]::-webkit-scrollbar-track,
+[class*="overflow-x"]::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 20px !important;
+    margin: 4px 0;
+}
+
+[style*="overflow-x"]::-webkit-scrollbar-thumb,
+[class*="overflow-x"]::-webkit-scrollbar-thumb {
+    background: #888 !important;
+    border-radius: 20px !important;
+    min-height: 40px !important;
+    border: 4px solid #f1f1f1;
+}
+
+[style*="overflow-x"]::-webkit-scrollbar-thumb:hover,
+[class*="overflow-x"]::-webkit-scrollbar-thumb:hover {
+    background: #666 !important;
+}
+
