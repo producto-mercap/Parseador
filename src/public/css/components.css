@@ -2,6 +2,17 @@
  * Estilos para componentes reutilizables
  */
 
+/* Variables CSS estándar según .cursorrules */
+:root {
+    --text-primary: #202124;
+    --text-secondary: #5f6368;
+    --primary-color: #316ba1;
+    --hover-bg: #f1f3f4;
+    --border-color: #dadce0;
+    --bg-white: #ffffff;
+    --shadow: 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
+}
+
 /* Botón del sidebar como elemento normal del flujo del documento */
 .sidebar-toggle-button {
     position: relative;
@@ -252,5 +263,16 @@
 
 .google-action-btn--primary:not(.google-button-group .google-action-btn):hover {
     box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+}
+
+/* Títulos de Página - Estilo estándar según .cursorrules */
+.page-title {
+    font-size: 32px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    letter-spacing: 0;
+    color: #656769;
+    font-family: 'Google Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.2;
 }
 
