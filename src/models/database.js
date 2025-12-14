@@ -1,8 +1,15 @@
 const { Pool } = require('pg');
 
+// Agregar search_path a la URL de conexión si no está presente
+let connectionString = process.env.DATABASE_URL;
+if (connectionString && !connectionString.includes('search_path=')) {
+    const separator = connectionString.includes('?') ? '&' : '?';
+    connectionString = `${connectionString}${separator}search_path=public`;
+}
+
 // Configuración del pool de conexiones para PostgreSQL/Neon
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: connectionString,
     ssl: {
         rejectUnauthorized: false // Necesario para Neon
     },
@@ -21,6 +28,8 @@ pool.on('error', (err) => {
 const initDatabase = async () => {
     const client = await pool.connect();
     try {
+        // Asegurar que el search_path esté configurado
+        await client.query('SET search_path TO public');
         await client.query('BEGIN');
 
         const tables = [
