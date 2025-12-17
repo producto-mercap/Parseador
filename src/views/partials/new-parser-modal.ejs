@@ -47,36 +47,9 @@
                             delimitador: formData.get('delimitador'),
                             cantidadColumnas: parseInt(cantidadColumnas),
                             incluyeSecciones: incluyeSecciones,
-                            esFormatoJson: formData.get('esFormatoJson') === 'on',
                             columnas: [],
                             secciones: []
                         };
-                        
-                        if (data.esFormatoJson) {
-                            try {
-                                const response = await fetch('/parser', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(data)
-                                });
-                                
-                                const result = await response.json();
-                                console.log('Respuesta del servidor:', result);
-                                
-                                if (result.success) {
-                                    showModal = false;
-                                    await actualizarParsers();
-                                } else {
-                                    throw new Error(result.error || 'Error al crear el parseador');
-                                }
-                            } catch (error) {
-                                console.error('Error al crear parseador:', error);
-                                alert('Error al crear el parseador: ' + error.message);
-                            }
-                            return;
-                        }
                         
                         if (!incluyeSecciones) {
                             for (let i = 0; i < data.cantidadColumnas; i++) {
@@ -157,16 +130,7 @@
                             </div>
                         </div>
 
-                        <div class="mb-4">
-                            <label class="flex items-center space-x-2">
-                                <input type="checkbox" name="esFormatoJson" class="form-checkbox h-5 w-5 text-blue-600"
-                                    x-model="esFormatoJson"
-                                    @change="$event.target.checked ? $event.target.form.tieneDelimitador.checked = false : null">
-                                <span class="text-gray-700">Formato JSON</span>
-                            </label>
-                        </div>
-
-                        <template x-if="!incluyeSecciones && !esFormatoJson">
+                        <template x-if="!incluyeSecciones">
                             <!-- Configuración parseador simple -->
                             <div class="space-y-6">
                                 <div class="flex items-center space-x-4">

@@ -15,8 +15,9 @@ class ParserDB {
                     delimitador, 
                     cantidad_columnas, 
                     incluye_secciones,
-                    esFormatoJson
-                ) VALUES ($1, $2, $3, $4, $5, $6)
+                    esFormatoJson,
+                    config_json
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
                 RETURNING id`,
                 [
                     parserData.nombre,
@@ -24,7 +25,8 @@ class ParserDB {
                     parserData.delimitador,
                     parserData.columnas?.length || parserData.cantidadColumnas || 0,
                     parserData.incluyeSecciones || false,
-                    parserData.esFormatoJson || false
+                    parserData.esFormatoJson || false,
+                    JSON.stringify(parserData.configJson || {})
                 ]
             );
 
@@ -106,7 +108,7 @@ class ParserDB {
     static async getAll() {
         try {
             const result = await pool.query(
-                `SELECT * FROM parseadores ORDER BY created_at DESC`
+                `SELECT * FROM parseadores ORDER BY nombre ASC`
             );
 
             const parsers = result.rows;
@@ -147,6 +149,28 @@ class ParserDB {
             // Asegurar que esFormatoJson esté presente (PostgreSQL puede retornar true/false o null)
             parser.esFormatoJson = parser.esformatojson !== undefined ? parser.esformatojson : (parser.esFormatoJson || false);
             
+            // Parsear config_json si existe
+            if (parser.config_json) {
+                try {
+                    parser.configJson = typeof parser.config_json === 'string' 
+                        ? JSON.parse(parser.config_json) 
+                        : parser.config_json;
+                } catch (e) {
+                    parser.configJson = {};
+                }
+            } else {
+                parser.configJson = {};
+            }
+            
+            // Si es un parseador JSON, asegurar configuración por defecto
+            if (parser.esFormatoJson && (!parser.configJson || Object.keys(parser.configJson).length === 0)) {
+                parser.configJson = {
+                    separador: '.',
+                    arrayPrimitivos: 'expandir',
+                    arrayObjetos: 'normalizar'
+                };
+            }
+            
             return parser;
         } catch (error) {
             throw error;
@@ -171,6 +195,28 @@ class ParserDB {
                 }));
             } else {
                 parser.secciones = await this.getSeccionesByParserId(id);
+            }
+            
+            // Parsear config_json si existe
+            if (parser.config_json) {
+                try {
+                    parser.configJson = typeof parser.config_json === 'string' 
+                        ? JSON.parse(parser.config_json) 
+                        : parser.config_json;
+                } catch (e) {
+                    parser.configJson = {};
+                }
+            } else {
+                parser.configJson = {};
+            }
+            
+            // Si es un parseador JSON, asegurar configuración por defecto
+            if (parser.esFormatoJson && (!parser.configJson || Object.keys(parser.configJson).length === 0)) {
+                parser.configJson = {
+                    separador: '.',
+                    arrayPrimitivos: 'expandir',
+                    arrayObjetos: 'normalizar'
+                };
             }
 
             return parser;
@@ -233,8 +279,9 @@ class ParserDB {
                     delimitador = $3, 
                     cantidad_columnas = $4, 
                     incluye_secciones = $5,
-                    esFormatoJson = $6
-                WHERE id = $7`,
+                    esFormatoJson = $6,
+                    config_json = $7
+                WHERE id = $8`,
                 [
                     parserData.nombre,
                     parserData.tieneDelimitador || false,
@@ -242,6 +289,7 @@ class ParserDB {
                     parserData.incluyeSecciones ? 0 : parserData.columnas?.length || 0,
                     parserData.incluyeSecciones || false,
                     parserData.esFormatoJson || false,
+                    JSON.stringify(parserData.configJson || {}),
                     id
                 ]
             );
