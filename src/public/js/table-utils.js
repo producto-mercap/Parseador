@@ -63,10 +63,6 @@ function inicializarDragScrollTabla() {
     if (tableContainer._dragScrollInitialized) return;
     tableContainer._dragScrollInitialized = true;
     
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/189ba8e2-2400-4df2-81c2-090fea5089e3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'table-utils.js:58',message:'inicializarDragScrollTabla called',data:{containerFound:!!tableContainer},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
-    
     let isDragging = false;
     let startX = 0;
     let startScrollLeft = 0;
@@ -89,10 +85,6 @@ function inicializarDragScrollTabla() {
     const setCursorGrab = () => {
         tableContainer.classList.remove('table-dragging');
         forceCursorUpdate(cursorGrabUrl);
-        // #region agent log
-        const computedCursor = window.getComputedStyle(tableContainer).cursor;
-        fetch('http://127.0.0.1:7242/ingest/189ba8e2-2400-4df2-81c2-090fea5089e3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'table-utils.js:87',message:'setCursorGrab called',data:{inlineCursor:tableContainer.style.cursor,computedCursor:computedCursor,hasDraggingClass:tableContainer.classList.contains('table-dragging')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
     };
     
     // Función para establecer cursor grabbing (manito cerrada)
@@ -154,14 +146,6 @@ function inicializarDragScrollTabla() {
                 !e.target.closest('.copy-row-btn')) {
                 // Aplicar inmediatamente sin requestAnimationFrame para mejor responsividad
                 tableContainer.style.cursor = cursorGrabUrl;
-                // #region agent log
-                const target = e.target;
-                const targetElement = target.tagName;
-                const targetClasses = target.className || '';
-                const computedCursor = window.getComputedStyle(target).cursor;
-                const containerComputed = window.getComputedStyle(tableContainer).cursor;
-                fetch('http://127.0.0.1:7242/ingest/189ba8e2-2400-4df2-81c2-090fea5089e3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'table-utils.js:148',message:'mousemove setting cursor',data:{targetElement:targetElement,targetClasses:targetClasses,targetComputedCursor:computedCursor,containerInlineCursor:tableContainer.style.cursor,containerComputedCursor:containerComputed},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-                // #endregion
             }
         }
     };
@@ -273,9 +257,6 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
             const th = document.createElement('th');
             th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100 select-none';
             th.dataset.columnName = col.nombre;
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/189ba8e2-2400-4df2-81c2-090fea5089e3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'table-utils.js:258',message:'th created without cursor-pointer',data:{thClasses:th.className},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-            // #endregion
             th.innerHTML = `
                 <div class="flex items-center gap-2">
                     <span>${col.nombre}</span>
@@ -325,9 +306,6 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-gray-50';
         tr.dataset.rowIndex = rowIndex;
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/189ba8e2-2400-4df2-81c2-090fea5089e3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'table-utils.js:307',message:'tr created without cursor-pointer',data:{trClasses:tr.className},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         
         // Celda para los iconos de acción
         const actionsTd = document.createElement('td');
