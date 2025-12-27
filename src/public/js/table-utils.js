@@ -30,19 +30,16 @@ function setupTableScrollSync() {
     // Sincronizar scroll: inferior -> superior
     tableContainer.addEventListener('scroll', () => {
         scrollbarTopInner.scrollLeft = tableContainer.scrollLeft;
-        updateNavButtons();
     });
 
     // Sincronizar scroll: superior -> inferior
     scrollbarTopInner.addEventListener('scroll', () => {
         tableContainer.scrollLeft = scrollbarTopInner.scrollLeft;
-        updateNavButtons();
     });
 
     // Sincronizar ancho cuando cambia el tamaño de la tabla
     const resizeObserver = new ResizeObserver(() => {
         syncScrollbarWidth();
-        updateNavButtons();
     });
     
     resizeObserver.observe(tableContainer);
@@ -55,99 +52,162 @@ function setupTableScrollSync() {
 }
 
 /**
- * Actualiza la visibilidad de los botones de navegación
+ * Inicializa el drag scroll para la tabla
+ * Permite arrastrar horizontalmente la tabla con el cursor grab
  */
-function updateNavButtons() {
+function inicializarDragScrollTabla() {
     const tableContainer = document.getElementById('tableScrollContainer');
-    const scrollLeftBtn = document.getElementById('scrollLeftButton');
-    const scrollRightBtn = document.getElementById('scrollRightButton');
+    if (!tableContainer) return;
     
-    if (!tableContainer || !scrollLeftBtn || !scrollRightBtn) {
-        return;
-    }
-
-    const scrollLeft = tableContainer.scrollLeft;
-    const maxScrollLeft = tableContainer.scrollWidth - tableContainer.clientWidth;
-    const hasHorizontalScroll = maxScrollLeft > 0;
-
-    if (hasHorizontalScroll) {
-        scrollLeftBtn.classList.add('show');
-        scrollRightBtn.classList.add('show');
-        
-        // Ocultar botón izquierdo si está al inicio
-        if (scrollLeft <= 5) {
-            scrollLeftBtn.classList.remove('show');
+    // Evitar múltiples inicializaciones
+    if (tableContainer._dragScrollInitialized) return;
+    tableContainer._dragScrollInitialized = true;
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/189ba8e2-2400-4df2-81c2-090fea5089e3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'table-utils.js:58',message:'inicializarDragScrollTabla called',data:{containerFound:!!tableContainer},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
+    let isDragging = false;
+    let startX = 0;
+    let startScrollLeft = 0;
+    
+    // URLs de los cursores - usar estándar primero (funciona en Firefox y Chrome)
+    // El CSS ya maneja las imágenes personalizadas, aquí usamos los valores estándar
+    const cursorGrabUrl = 'grab';
+    const cursorGrabbingUrl = 'grabbing';
+    
+    // Función para forzar actualización del cursor en Chrome usando imágenes personalizadas
+    // Chrome necesita un "refresh" agresivo para renderizar cursores personalizados correctamente
+    const forceCursorUpdate = (cursorUrl) => {
+        // Aplicar el cursor directamente
+        tableContainer.style.cursor = cursorUrl;
+        // Forzar reflow para asegurar que el navegador procese el cambio
+        void tableContainer.offsetHeight;
+    };
+    
+    // Función para establecer cursor grab (manito abierta)
+    const setCursorGrab = () => {
+        tableContainer.classList.remove('table-dragging');
+        forceCursorUpdate(cursorGrabUrl);
+        // #region agent log
+        const computedCursor = window.getComputedStyle(tableContainer).cursor;
+        fetch('http://127.0.0.1:7242/ingest/189ba8e2-2400-4df2-81c2-090fea5089e3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'table-utils.js:87',message:'setCursorGrab called',data:{inlineCursor:tableContainer.style.cursor,computedCursor:computedCursor,hasDraggingClass:tableContainer.classList.contains('table-dragging')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
+    };
+    
+    // Función para establecer cursor grabbing (manito cerrada)
+    const setCursorGrabbing = () => {
+        tableContainer.classList.add('table-dragging');
+        forceCursorUpdate(cursorGrabbingUrl);
+    };
+    
+    // Mousedown: iniciar arrastre
+    const handleMouseDown = (e) => {
+        // No arrastrar si se hace click en elementos interactivos
+        if (e.target.closest('button') || 
+            e.target.closest('a') ||
+            e.target.closest('input') ||
+            e.target.closest('select') ||
+            e.target.closest('textarea') ||
+            e.target.closest('.edit-row-btn') ||
+            e.target.closest('.copy-row-btn')) {
+            return;
         }
         
-        // Ocultar botón derecho si está al final
-        if (scrollLeft >= maxScrollLeft - 5) {
-            scrollRightBtn.classList.remove('show');
-        }
-    } else {
-        scrollLeftBtn.classList.remove('show');
-        scrollRightBtn.classList.remove('show');
-    }
-}
-
-/**
- * Desplaza la tabla horizontalmente
- */
-function scrollTableHorizontal(direction) {
-    const tableContainer = document.getElementById('tableScrollContainer');
-    if (!tableContainer) {
-        console.error('No se encontró tableScrollContainer');
-        return;
-    }
-    
-    const currentScroll = tableContainer.scrollLeft;
-    const containerWidth = tableContainer.clientWidth;
-    const scrollWidth = tableContainer.scrollWidth;
-    const maxScroll = scrollWidth - containerWidth;
-    
-    console.log('Scroll info:', {
-        currentScroll,
-        containerWidth,
-        scrollWidth,
-        maxScroll,
-        direction
-    });
-    
-    if (direction === 'left') {
-        // Botón izquierdo: llevar al inicio con un solo click
-        tableContainer.scrollLeft = 0;
+        isDragging = true;
+        startX = e.clientX;
+        startScrollLeft = tableContainer.scrollLeft;
         
-        // Sincronizar con scrollbar superior si existe
-        const scrollbarTopInner = document.getElementById('tableScrollbarTopInner');
-        if (scrollbarTopInner) {
-            scrollbarTopInner.scrollLeft = 0;
-        }
-    } else {
-        // Botón derecho: mover un poco por cada click (incrementos pequeños)
-        const scrollAmount = 300; // píxeles a desplazar por click
-        const newScroll = Math.min(maxScroll, currentScroll + scrollAmount);
+        setCursorGrabbing();
         
-        console.log('Desplazando:', {
-            scrollAmount,
-            currentScroll,
-            newScroll,
-            maxScroll
-        });
+        // Prevenir selección de texto
+        e.preventDefault();
         
-        tableContainer.scrollLeft = newScroll;
-        
-        // Sincronizar con scrollbar superior si existe
-        const scrollbarTopInner = document.getElementById('tableScrollbarTopInner');
-        if (scrollbarTopInner) {
-            scrollbarTopInner.scrollLeft = newScroll;
-        }
-    }
+        // Agregar clase al body para prevenir selección global
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = cursorGrabbingUrl;
+    };
     
-    // Actualizar botones después de un pequeño delay
-    setTimeout(() => {
-        if (window.updateNavButtons) {
-            updateNavButtons();
+    // Mousemove: arrastrar o actualizar cursor
+    const handleMouseMove = (e) => {
+        if (isDragging) {
+            // Modo arrastre: desplazar el scroll
+            e.preventDefault();
+            const deltaX = e.clientX - startX;
+            const scrollAmount = deltaX * 1.5; // Factor de velocidad
+            tableContainer.scrollLeft = startScrollLeft - scrollAmount;
+            
+            // Sincronizar con scrollbar superior si existe
+            const scrollbarTopInner = document.getElementById('tableScrollbarTopInner');
+            if (scrollbarTopInner) {
+                scrollbarTopInner.scrollLeft = tableContainer.scrollLeft;
+            }
+        } else {
+            // Modo normal: forzar actualización del cursor en cada movimiento
+            // Esto es crítico para Chrome - necesita este "refresh" constante
+            if (!e.target.closest('button') && 
+                !e.target.closest('a') &&
+                !e.target.closest('input') &&
+                !e.target.closest('select') &&
+                !e.target.closest('textarea') &&
+                !e.target.closest('.edit-row-btn') &&
+                !e.target.closest('.copy-row-btn')) {
+                // Aplicar inmediatamente sin requestAnimationFrame para mejor responsividad
+                tableContainer.style.cursor = cursorGrabUrl;
+                // #region agent log
+                const target = e.target;
+                const targetElement = target.tagName;
+                const targetClasses = target.className || '';
+                const computedCursor = window.getComputedStyle(target).cursor;
+                const containerComputed = window.getComputedStyle(tableContainer).cursor;
+                fetch('http://127.0.0.1:7242/ingest/189ba8e2-2400-4df2-81c2-090fea5089e3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'table-utils.js:148',message:'mousemove setting cursor',data:{targetElement:targetElement,targetClasses:targetClasses,targetComputedCursor:computedCursor,containerInlineCursor:tableContainer.style.cursor,containerComputedCursor:containerComputed},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                // #endregion
+            }
         }
-    }, 50);
+    };
+    
+    // Mouseup: finalizar arrastre
+    const handleMouseUp = () => {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        setCursorGrab();
+        
+        // Restaurar selección de texto
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+    };
+    
+    // Mouseleave: cancelar arrastre si el mouse sale del elemento
+    const handleMouseLeave = () => {
+        if (isDragging) {
+            isDragging = false;
+            setCursorGrab();
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+        }
+    };
+    
+    // Mouseenter: forzar actualización del cursor cuando el mouse entra
+    // Esto es crítico para Chrome - fuerza el renderizado del cursor al entrar
+    const handleMouseEnter = () => {
+        if (!isDragging) {
+            // Aplicar inmediatamente y también con delay para asegurar que Chrome lo procese
+            tableContainer.style.cursor = cursorGrabUrl;
+            setTimeout(() => {
+                if (!isDragging) {
+                    setCursorGrab();
+                }
+            }, 10);
+        }
+    };
+    
+    // Agregar event listeners
+    tableContainer.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    tableContainer.addEventListener('mouseleave', handleMouseLeave);
+    tableContainer.addEventListener('mouseenter', handleMouseEnter);
 }
 
 /**
@@ -171,8 +231,9 @@ function setupHorizontalWheelScroll() {
  * @param {Array} columns - Array de objetos con la configuración de las columnas
  * @param {Function} onSort - Función callback para ordenar (recibe columnName)
  * @param {Object} tableDataRef - Referencia al objeto donde se guardan los datos para ordenamiento
+ * @param {Object} sortState - Estado de ordenamiento opcional {sortColumn, sortDirection}
  */
-function updateTable(data, columns, onSort, tableDataRef) {
+function updateTable(data, columns, onSort, tableDataRef, sortState) {
     if (!data || !Array.isArray(data) || data.length === 0) {
         console.log('No hay datos para mostrar');
         return;
@@ -210,12 +271,16 @@ function updateTable(data, columns, onSort, tableDataRef) {
     if (columns && Array.isArray(columns)) {
         columns.forEach(col => {
             const th = document.createElement('th');
-            th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none';
+            th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100 select-none';
+            th.dataset.columnName = col.nombre;
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/189ba8e2-2400-4df2-81c2-090fea5089e3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'table-utils.js:258',message:'th created without cursor-pointer',data:{thClasses:th.className},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
             th.innerHTML = `
                 <div class="flex items-center gap-2">
                     <span>${col.nombre}</span>
-                    <svg class="w-4 h-4 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity: 0.5;">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                    <svg class="w-4 h-4 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
                     </svg>
                 </div>
             `;
@@ -224,6 +289,25 @@ function updateTable(data, columns, onSort, tableDataRef) {
             }
             headerRow.appendChild(th);
         });
+        
+        // Mostrar icono de ordenamiento si hay una columna ordenada
+        if (sortState && sortState.sortColumn) {
+            const sortedHeader = headerRow.querySelector(`th[data-column-name="${sortState.sortColumn}"]`);
+            if (sortedHeader) {
+                const icon = sortedHeader.querySelector('.sort-icon');
+                if (icon) {
+                    icon.style.display = 'block';
+                    const path = icon.querySelector('path');
+                    if (path) {
+                        if (sortState.sortDirection === 'asc') {
+                            path.setAttribute('d', 'M5 15l7-7 7 7');
+                        } else {
+                            path.setAttribute('d', 'M19 9l-7 7-7-7');
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // Asegurarnos de que tbody exista
@@ -239,8 +323,11 @@ function updateTable(data, columns, onSort, tableDataRef) {
     // Actualizar cuerpo de la tabla
     data.forEach((row, rowIndex) => {
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-gray-50 cursor-pointer';
+        tr.className = 'hover:bg-gray-50';
         tr.dataset.rowIndex = rowIndex;
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/189ba8e2-2400-4df2-81c2-090fea5089e3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'table-utils.js:307',message:'tr created without cursor-pointer',data:{trClasses:tr.className},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         
         // Celda para los iconos de acción
         const actionsTd = document.createElement('td');
@@ -348,14 +435,14 @@ function updateTable(data, columns, onSort, tableDataRef) {
         tbody.appendChild(tr);
     });
     
-    // Configurar detección de scroll horizontal
-    setupScrollDetection();
+    // Configurar detección de scroll horizontal (ya no necesario para botones)
+    // setupScrollDetection();
     
     // Inicializar funcionalidades de scroll mejoradas
     setTimeout(() => {
         if (window.setupTableScrollSync) setupTableScrollSync();
         if (window.setupHorizontalWheelScroll) setupHorizontalWheelScroll();
-        if (window.updateNavButtons) updateNavButtons();
+        if (window.inicializarDragScrollTabla) inicializarDragScrollTabla();
     }, 100);
     
     // Guardar datos para ordenamiento
@@ -408,48 +495,35 @@ function sortTable(columnName, data, sortState, onUpdate) {
     headers.forEach(th => {
         const icon = th.querySelector('.sort-icon');
         if (icon) {
-            if (th.textContent.trim().includes(columnName)) {
-                icon.style.opacity = '1';
-                icon.style.transform = sortState.sortDirection === 'asc' ? 'rotate(0deg)' : 'rotate(180deg)';
+            const thColumnName = th.dataset.columnName || th.textContent.trim();
+            if (thColumnName === columnName) {
+                // Mostrar icono solo en la columna ordenada
+                icon.style.display = 'block';
+                // Cambiar el path según la dirección
+                const path = icon.querySelector('path');
+                if (path) {
+                    if (sortState.sortDirection === 'asc') {
+                        // Flecha hacia arriba
+                        path.setAttribute('d', 'M5 15l7-7 7 7');
+                    } else {
+                        // Flecha hacia abajo
+                        path.setAttribute('d', 'M19 9l-7 7-7-7');
+                    }
+                }
             } else {
-                icon.style.opacity = '0.5';
-                icon.style.transform = 'rotate(0deg)';
+                // Ocultar icono en las demás columnas
+                icon.style.display = 'none';
             }
         }
     });
 }
 
 /**
- * Configura la detección de scroll horizontal para mostrar el botón de scroll a la izquierda
+ * Configura la detección de scroll horizontal (función simplificada, ya no maneja botones)
  */
 function setupScrollDetection() {
-    setTimeout(() => {
-        const tableContainer = document.getElementById('tableScrollContainer') || document.querySelector('.table-container');
-        const scrollLeftButton = document.getElementById('scrollLeftButton');
-        if (tableContainer && scrollLeftButton) {
-            const checkScroll = () => {
-                const scrollLeft = tableContainer.scrollLeft;
-                if (scrollLeft > 0) {
-                    scrollLeftButton.style.display = 'flex';
-                    scrollLeftButton.style.opacity = '1';
-                    scrollLeftButton.style.pointerEvents = 'auto';
-                } else {
-                    scrollLeftButton.style.display = 'none';
-                    scrollLeftButton.style.opacity = '0';
-                    scrollLeftButton.style.pointerEvents = 'none';
-                }
-            };
-            
-            const oldCheckScroll = tableContainer._checkScrollHandler;
-            if (oldCheckScroll) {
-                tableContainer.removeEventListener('scroll', oldCheckScroll);
-            }
-            tableContainer._checkScrollHandler = checkScroll;
-            tableContainer.addEventListener('scroll', checkScroll);
-            checkScroll();
-            setTimeout(checkScroll, 500);
-        }
-    }, 300);
+    // Esta función se mantiene por compatibilidad pero ya no hace nada relacionado con botones
+    // El drag scroll se inicializa desde updateTable
 }
 
 // Hacer disponible globalmente
@@ -457,6 +531,5 @@ window.updateTable = updateTable;
 window.sortTable = sortTable;
 window.setupScrollDetection = setupScrollDetection;
 window.setupTableScrollSync = setupTableScrollSync;
-window.updateNavButtons = updateNavButtons;
-window.scrollTableHorizontal = scrollTableHorizontal;
+window.inicializarDragScrollTabla = inicializarDragScrollTabla;
 window.setupHorizontalWheelScroll = setupHorizontalWheelScroll;

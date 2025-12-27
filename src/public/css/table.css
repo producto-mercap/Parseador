@@ -175,52 +175,58 @@ div.overflow-x-auto::-webkit-scrollbar-thumb:hover,
     scrollbar-color: #888 #f1f1f1 !important;
 }
 
-/* Botones de navegación horizontal - Posición fija para siempre visibles */
-.table-nav-button {
-    position: fixed;
-    z-index: 50;
-    width: 44px;
-    height: 44px;
-    background: white;
-    border: 1px solid #dadce0;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.05);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    opacity: 0;
-    pointer-events: none;
+/* Cursor grab para desplazamiento horizontal de la tabla */
+/* Replicar exactamente el comportamiento del Gantt */
+/* IMPORTANTE: Usar máxima especificidad para sobrescribir clases de Tailwind como cursor-pointer */
+#tableScrollContainer {
+    cursor: url('/images/cursor-grab.png') 12 12, url('/images/cursor-grab.svg') 12 12, -webkit-grab, grab !important;
+    user-select: none;
 }
 
-.table-nav-button:hover {
-    background: #f8f9fa;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
-    transform: scale(1.05);
+#tableScrollContainer.table-dragging {
+    cursor: url('/images/cursor-grabbing.png') 12 12, url('/images/cursor-grabbing.svg') 12 12, -webkit-grabbing, grabbing !important;
 }
 
-.table-nav-button:active {
-    transform: scale(0.95);
+/* Hover del contenedor mantiene cursor grab */
+#tableScrollContainer:hover:not(.table-dragging) {
+    cursor: url('/images/cursor-grab.png') 12 12, url('/images/cursor-grab.svg') 12 12, -webkit-grab, grab !important;
 }
 
-/* Botón izquierdo - lado izquierdo de la pantalla */
-.table-nav-button-left {
-    left: 16px;
-    top: 50vh;
-    transform: translateY(-50%);
+/* Los botones y elementos interactivos mantienen cursor pointer (manito con dedo índice) - debe ir primero */
+#tableScrollContainer button,
+#tableScrollContainer .edit-row-btn,
+#tableScrollContainer .copy-row-btn,
+#tableScrollContainer a {
+    cursor: pointer !important;
 }
 
-/* Botón derecho - lado derecho de la pantalla */
-.table-nav-button-right {
-    right: 16px;
-    top: 50vh;
-    transform: translateY(-50%);
+/* Asegurar que las filas y celdas de la tabla hereden el cursor grab */
+/* Sobrescribir explícitamente cualquier clase cursor-pointer de Tailwind */
+#tableScrollContainer .data-table,
+#tableScrollContainer .data-table thead,
+#tableScrollContainer .data-table thead tr,
+#tableScrollContainer .data-table thead th,
+#tableScrollContainer .data-table tbody,
+#tableScrollContainer .data-table tbody tr,
+#tableScrollContainer .data-table tbody td {
+    cursor: url('/images/cursor-grab.png') 12 12, url('/images/cursor-grab.svg') 12 12, -webkit-grab, grab !important;
 }
 
-.table-nav-button.show {
-    opacity: 1;
-    pointer-events: auto;
-    display: flex !important;
+/* Asegurar que todos los elementos hijos del contenedor hereden el cursor grab, excepto botones y elementos interactivos */
+#tableScrollContainer *:not(button):not(a):not(input):not(select):not(textarea):not(.edit-row-btn):not(.copy-row-btn) {
+    cursor: url('/images/cursor-grab.png') 12 12, url('/images/cursor-grab.svg') 12 12, -webkit-grab, grab !important;
+}
+
+/* Asegurar que los elementos dentro de botones y elementos interactivos NO hereden el cursor grab */
+#tableScrollContainer button *,
+#tableScrollContainer .edit-row-btn *,
+#tableScrollContainer .copy-row-btn *,
+#tableScrollContainer a * {
+    cursor: inherit !important;
+}
+
+/* Asegurar que las celdas editables mantengan cursor text */
+#tableScrollContainer td[contenteditable="true"] {
+    cursor: text !important;
 }
 

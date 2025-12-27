@@ -133,13 +133,19 @@ document.addEventListener('alpine:init', () => {
                     // Actualizar la tabla con los datos de la primera sección
                     const primeraSeccion = result.secciones[this.activeTab];
                     this.columns = primeraSeccion.columnas;
+                    this.tableData = primeraSeccion.datos; // Actualizar tableData
                     this.updateTableWithSections(result.secciones);
                 } else {
                     // Manejar datos sin secciones (caso anterior)
                     this.groupedData = result.data;
                     this.columns = result.columns;
+                    this.tableData = result.data; // Actualizar tableData
                     if (window.updateTable) {
-                        window.updateTable(result.data, this.columns, (colName) => this.sortTable(colName), { data: this.tableData });
+                        const sortState = {
+                            sortColumn: this.sortColumn,
+                            sortDirection: this.sortDirection
+                        };
+                        window.updateTable(result.data, this.columns, (colName) => this.sortTable(colName), { data: this.tableData }, sortState);
                     }
                 }
                 
@@ -171,8 +177,13 @@ document.addEventListener('alpine:init', () => {
                 tab.onclick = () => {
                     this.activeTab = seccionNombre;
                     this.columns = secciones[seccionNombre].columnas;
+                    this.tableData = secciones[seccionNombre].datos; // Actualizar tableData
                     if (window.updateTable) {
-                        window.updateTable(secciones[seccionNombre].datos, this.columns, (colName) => this.sortTable(colName), { data: this.tableData });
+                        const sortState = {
+                            sortColumn: this.sortColumn,
+                            sortDirection: this.sortDirection
+                        };
+                        window.updateTable(secciones[seccionNombre].datos, this.columns, (colName) => this.sortTable(colName), { data: this.tableData }, sortState);
                     }
                     
                     // Actualizar estilos de las pestañas
@@ -194,8 +205,13 @@ document.addEventListener('alpine:init', () => {
             }
 
             // Mostrar los datos de la primera sección
+            this.tableData = secciones[this.activeTab].datos; // Actualizar tableData
             if (window.updateTable) {
-                window.updateTable(secciones[this.activeTab].datos, this.columns, (colName) => this.sortTable(colName), { data: this.tableData });
+                const sortState = {
+                    sortColumn: this.sortColumn,
+                    sortDirection: this.sortDirection
+                };
+                window.updateTable(secciones[this.activeTab].datos, this.columns, (colName) => this.sortTable(colName), { data: this.tableData }, sortState);
             }
         },
 
@@ -284,8 +300,17 @@ document.addEventListener('alpine:init', () => {
         },
 
         updateTable(data) {
+            // Actualizar tableData antes de llamar a updateTable
+            this.tableData = data;
             if (window.updateTable) {
-                window.updateTable(data, this.columns, (colName) => this.sortTable(colName), { data: this.tableData });
+                const tableDataRef = { data: this.tableData };
+                const sortState = {
+                    sortColumn: this.sortColumn,
+                    sortDirection: this.sortDirection
+                };
+                window.updateTable(data, this.columns, (colName) => this.sortTable(colName), tableDataRef, sortState);
+                // Sincronizar después de la actualización
+                this.tableData = tableDataRef.data;
             }
         },
 
