@@ -33,6 +33,14 @@ function validateParserData(data) {
 
     if (data.esFormatoJson) {
         // Si es formato JSON, no necesitamos validar columnas ni secciones
+        // Asegurar que tenga configuración por defecto si no se proporciona
+        if (!data.configJson) {
+            data.configJson = {
+                separador: '.',
+                arrayPrimitivos: 'expandir',
+                arrayObjetos: 'normalizar'
+            };
+        }
         return {
             ...data,
             columnas: [],

@@ -10,6 +10,13 @@ class Parser {
         this.esFormatoJson = data.esFormatoJson !== undefined ? data.esFormatoJson : 
                             (data.esformatojson !== undefined ? data.esformatojson : false);
         
+        // Configuración del parseador JSON (valores por defecto)
+        this.configJson = data.configJson || data.config_json || {
+            separador: '.',           // Separador para claves anidadas: '.' o '_'
+            arrayPrimitivos: 'expandir', // 'expandir' o 'serializar'
+            arrayObjetos: 'normalizar'   // 'normalizar' o 'aplanar'
+        };
+        
         // Asegurarnos que las columnas y secciones se inicializan correctamente
         if (this.incluyeSecciones) {
             this.secciones = data.secciones.map(seccion => ({
@@ -251,100 +258,251 @@ class Parser {
 
     procesarJson(contenido) {
         try {
-            // Limpiar el contenido de espacios en blanco al inicio y final
             const contenidoLimpio = contenido.trim();
             const jsonData = JSON.parse(contenidoLimpio);
+            const separador = this.configJson.separador || '.';
+            const arrayPrimitivos = this.configJson.arrayPrimitivos || 'expandir';
+            const arrayObjetos = this.configJson.arrayObjetos || 'normalizar';
+
+            // Conjunto para almacenar todas las claves encontradas en todos los registros
             const todasLasClaves = new Set();
-            const resultadoAplanado = {};
+            const filas = [];
 
+            /**
+             * Aplana un objeto anidado en un objeto plano usando el separador configurado
+             */
             const aplanarObjeto = (obj, path = '') => {
-                // Si no es un objeto válido, retornar
                 if (!obj || typeof obj !== 'object') {
-                    return;
+                    return {};
                 }
 
-                // Si es un array, procesar cada elemento
-                if (Array.isArray(obj)) {
-                    obj.forEach((item, index) => {
-                        const newPath = path ? `${path}[${index}]` : `[${index}]`;
-                        if (item && typeof item === 'object' && !Array.isArray(item)) {
-                            aplanarObjeto(item, newPath);
-                        } else {
-                            resultadoAplanado[newPath] = item;
-                            todasLasClaves.add(newPath);
-                        }
-                    });
-                    return;
-                }
+                const resultado = {};
 
-                // Procesar objeto normal
                 for (const [key, value] of Object.entries(obj)) {
-                    const newPath = path ? `${path}.${key}` : key;
-                    
+                    const newPath = path ? `${path}${separador}${key}` : key;
+
                     // Manejar valores null o undefined
                     if (value === null || value === undefined) {
-                        resultadoAplanado[newPath] = value;
+                        resultado[newPath] = null;
                         todasLasClaves.add(newPath);
                         continue;
                     }
-                    
-                    // Si es un objeto anidado (pero no array)
-                    if (typeof value === 'object' && !Array.isArray(value)) {
-                        aplanarObjeto(value, newPath);
-                    } 
+
                     // Si es un array
-                    else if (Array.isArray(value)) {
+                    if (Array.isArray(value)) {
                         if (value.length === 0) {
-                            resultadoAplanado[newPath] = [];
+                            // Array vacío: serializar o dejar vacío según configuración
+                            if (arrayPrimitivos === 'serializar') {
+                                resultado[newPath] = JSON.stringify([]);
+                            } else {
+                                resultado[newPath] = null;
+                            }
                             todasLasClaves.add(newPath);
                         } else {
-                            value.forEach((item, index) => {
-                                if (item && typeof item === 'object' && !Array.isArray(item)) {
-                                    aplanarObjeto(item, `${newPath}[${index}]`);
+                            // Verificar si el array contiene objetos o primitivos
+                            const tieneObjetos = value.some(item => 
+                                item && typeof item === 'object' && !Array.isArray(item)
+                            );
+
+                            if (tieneObjetos && arrayObjetos === 'normalizar') {
+                                // Arrays de objetos: generar múltiples filas (se maneja después)
+                                // Por ahora, marcamos que este campo contiene un array de objetos
+                                resultado[`${newPath}_is_array`] = true;
+                                todasLasClaves.add(`${newPath}_is_array`);
+                            } else if (tieneObjetos && arrayObjetos === 'aplanar') {
+                                // Arrays de objetos: aplanar cada objeto
+                                value.forEach((item, index) => {
+                                    if (item && typeof item === 'object' && !Array.isArray(item)) {
+                                        const aplanado = aplanarObjeto(item, `${newPath}_${index}`);
+                                        Object.assign(resultado, aplanado);
+                                    }
+                                });
+                            } else {
+                                // Array de primitivos
+                                if (arrayPrimitivos === 'expandir') {
+                                    // Expandir en columnas: campo_0, campo_1, etc.
+                                    value.forEach((item, index) => {
+                                        const columna = `${newPath}_${index}`;
+                                        resultado[columna] = item;
+                                        todasLasClaves.add(columna);
+                                    });
                                 } else {
-                                    resultadoAplanado[`${newPath}[${index}]`] = item;
-                                    todasLasClaves.add(`${newPath}[${index}]`);
+                                    // Serializar el array completo
+                                    resultado[newPath] = JSON.stringify(value);
+                                    todasLasClaves.add(newPath);
                                 }
-                            });
+                            }
                         }
-                    } 
+                    }
+                    // Si es un objeto anidado (pero no array)
+                    else if (typeof value === 'object' && !Array.isArray(value)) {
+                        const aplanado = aplanarObjeto(value, newPath);
+                        Object.assign(resultado, aplanado);
+                    }
                     // Valor primitivo (string, number, boolean)
                     else {
-                        resultadoAplanado[newPath] = value;
+                        resultado[newPath] = value;
                         todasLasClaves.add(newPath);
+                    }
+                }
+
+                return resultado;
+            };
+
+            /**
+             * Procesa un array de objetos generando múltiples filas (normalización)
+             */
+            const procesarArrayObjetos = (array, pathBase = '') => {
+                const filasGeneradas = [];
+                
+                array.forEach((item, arrayIndex) => {
+                    if (item && typeof item === 'object' && !Array.isArray(item)) {
+                        const fila = aplanarObjeto(item, pathBase);
+                        
+                        // Agregar índice del array si es necesario
+                        if (pathBase) {
+                            fila[`${pathBase}_index`] = arrayIndex;
+                            todasLasClaves.add(`${pathBase}_index`);
+                        }
+                        
+                        filasGeneradas.push(fila);
+                    }
+                });
+                
+                return filasGeneradas;
+            };
+
+            /**
+             * Procesa un objeto o array principal, manejando arrays de objetos anidados
+             */
+            const procesarDato = (dato, pathBase = '', objetoPadre = null) => {
+                if (Array.isArray(dato)) {
+                    // Si es un array en el nivel raíz
+                    if (arrayObjetos === 'normalizar') {
+                        // Generar múltiples filas (una por cada objeto en el array)
+                        const filasArray = procesarArrayObjetos(dato, pathBase);
+                        filas.push(...filasArray);
+                    } else {
+                        // Aplanar: tratar como un solo objeto con índices
+                        const fila = {};
+                        dato.forEach((item, index) => {
+                            if (item && typeof item === 'object' && !Array.isArray(item)) {
+                                const aplanado = aplanarObjeto(item, `${pathBase}_${index}`);
+                                Object.assign(fila, aplanado);
+                            } else {
+                                fila[`${pathBase}_${index}`] = item;
+                                todasLasClaves.add(`${pathBase}_${index}`);
+                            }
+                        });
+                        if (Object.keys(fila).length > 0) {
+                            filas.push(fila);
+                        }
+                    }
+                } else if (dato && typeof dato === 'object') {
+                    // Es un objeto - primero aplanar
+                    const filaBase = aplanarObjeto(dato, pathBase);
+                    
+                    // Buscar arrays de objetos que necesiten normalización
+                    const arraysParaNormalizar = [];
+                    
+                    const buscarArraysObjetos = (obj, pathActual = '') => {
+                        for (const [key, value] of Object.entries(obj)) {
+                            const pathCompleto = pathActual ? `${pathActual}${separador}${key}` : key;
+                            
+                            if (Array.isArray(value) && value.length > 0) {
+                                const tieneObjetos = value.some(item => 
+                                    item && typeof item === 'object' && !Array.isArray(item)
+                                );
+                                
+                                if (tieneObjetos && arrayObjetos === 'normalizar') {
+                                    arraysParaNormalizar.push({
+                                        path: pathCompleto,
+                                        array: value
+                                    });
+                                }
+                            } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+                                buscarArraysObjetos(value, pathCompleto);
+                            }
+                        }
+                    };
+                    
+                    buscarArraysObjetos(dato, pathBase);
+                    
+                    // Si hay arrays de objetos para normalizar, generar múltiples filas
+                    if (arraysParaNormalizar.length > 0) {
+                        // Usar el primer array encontrado para generar filas
+                        const primerArray = arraysParaNormalizar[0];
+                        
+                        primerArray.array.forEach((itemObj, idx) => {
+                            if (itemObj && typeof itemObj === 'object' && !Array.isArray(itemObj)) {
+                                const nuevaFila = { ...filaBase };
+                                
+                                // Eliminar marcadores de arrays
+                                Object.keys(nuevaFila).forEach(key => {
+                                    if (key.endsWith('_is_array')) {
+                                        delete nuevaFila[key];
+                                    }
+                                });
+                                
+                                // Agregar campos del objeto del array
+                                const aplanadoArray = aplanarObjeto(itemObj, primerArray.path);
+                                Object.assign(nuevaFila, aplanadoArray);
+                                
+                                // Agregar índice
+                                nuevaFila[`${primerArray.path}_index`] = idx;
+                                todasLasClaves.add(`${primerArray.path}_index`);
+                                
+                                filas.push(nuevaFila);
+                            }
+                        });
+                    } else {
+                        // No hay arrays de objetos, usar la fila base
+                        // Eliminar marcadores de arrays si existen
+                        Object.keys(filaBase).forEach(key => {
+                            if (key.endsWith('_is_array')) {
+                                delete filaBase[key];
+                            }
+                        });
+                        filas.push(filaBase);
                     }
                 }
             };
 
-            // Procesar según el tipo de dato
+            // Procesar según el tipo de dato raíz
             if (Array.isArray(jsonData)) {
-                jsonData.forEach((item, index) => {
-                    if (item && typeof item === 'object' && !Array.isArray(item)) {
-                        aplanarObjeto(item);
-                    }
-                });
-            } else if (jsonData && typeof jsonData === 'object' && !Array.isArray(jsonData)) {
-                aplanarObjeto(jsonData);
+                procesarDato(jsonData);
+            } else if (jsonData && typeof jsonData === 'object') {
+                procesarDato(jsonData);
             }
 
-            // Debug: verificar qué se está creando
-            console.log('Resultado aplanado:', resultadoAplanado);
-            console.log('Claves encontradas:', Array.from(todasLasClaves));
-            console.log('Número de propiedades:', Object.keys(resultadoAplanado).length);
+            // Asegurar que todas las filas tengan las mismas columnas (rellenar con null)
+            const columnasOrdenadas = Array.from(todasLasClaves).sort();
+            const filasNormalizadas = filas.map(fila => {
+                const filaNormalizada = {};
+                columnasOrdenadas.forEach(columna => {
+                    filaNormalizada[columna] = fila.hasOwnProperty(columna) 
+                        ? fila[columna] 
+                        : null;
+                });
+                return filaNormalizada;
+            });
+
+            // Si no se generaron filas, crear una fila vacía con todas las columnas
+            if (filasNormalizadas.length === 0 && columnasOrdenadas.length > 0) {
+                const filaVacia = {};
+                columnasOrdenadas.forEach(columna => {
+                    filaVacia[columna] = null;
+                });
+                filasNormalizadas.push(filaVacia);
+            }
 
             // Crear columnas basadas en todas las claves encontradas
-            this.columnas = Array.from(todasLasClaves)
-                .sort()
-                .map(clave => ({
-                    nombre: clave,
-                    tipo: 'string'
-                }));
+            this.columnas = columnasOrdenadas.map(clave => ({
+                nombre: clave,
+                tipo: 'string'
+            }));
 
-            // Retornar un array con un solo objeto aplanado
-            const resultadoFinal = Object.keys(resultadoAplanado).length > 0 ? [resultadoAplanado] : [];
-            console.log('Resultado final a retornar:', resultadoFinal);
-            console.log('Columnas creadas:', this.columnas.length);
-            return resultadoFinal;
+            return filasNormalizadas;
         } catch (error) {
             console.error('Error en procesarJson:', error);
             throw new Error(`Error al procesar JSON: ${error.message}`);
