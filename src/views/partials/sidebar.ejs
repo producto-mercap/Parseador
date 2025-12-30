@@ -1,42 +1,58 @@
 <!-- Panel lateral -->
 <div 
     :class="sidebarCollapsed ? 'w-0 overflow-hidden' : 'w-64'"
-    class="flex-shrink-0 bg-gray-50 shadow-lg transition-all duration-300 relative">
-    <div class="p-4" x-show="!sidebarCollapsed">
+    class="flex-shrink-0 bg-white border-r border-gray-200 shadow-sm transition-all duration-300 relative">
+    <div class="p-5 h-full overflow-y-auto sidebar-scroll" x-show="!sidebarCollapsed">
         <!-- Botón Nuevo Parseador -->
         <button 
             @click="showModal = true"
-            class="google-action-btn google-action-btn--primary w-full">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            class="google-action-btn google-action-btn--secondary w-full mb-6 shadow-sm border border-gray-300 text-blue-600 hover:text-blue-700">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            <span>Nuevo Parseador</span>
+            <span class="font-medium text-blue-600">Nuevo Parseador</span>
         </button>
 
+        <!-- Separador -->
+        <div class="h-px bg-gray-200 mb-4"></div>
+
         <!-- Lista de parseadores -->
-        <nav class="mt-4 space-y-2">
+        <nav class="space-y-1">
             <template x-if="parsers.length === 0">
-                <div class="text-gray-500 text-sm p-2">
-                    No hay parseadores configurados
+                <div class="text-gray-400 text-sm p-3 text-center bg-gray-50 rounded-lg border border-gray-100">
+                    <svg class="w-8 h-8 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p>No hay parseadores configurados</p>
                 </div>
             </template>
             <template x-for="parser in parsers" :key="parser.id">
                 <div 
-                    class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                    class="group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200"
                     @click="selectedParser = parser"
-                    :class="{'bg-blue-50': selectedParser?.id === parser.id}">
-                    <div class="flex justify-between items-center w-full">
-                        <span class="text-gray-600" x-text="parser.nombre"></span>
-                        <div class="flex items-center">
-                            <button 
-                                @click="editarParser($event, parser.id)" 
-                                class="ml-2 text-gray-400 hover:text-blue-500">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 102.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                </svg>
-                            </button>
-                        </div>
+                    :class="selectedParser?.id === parser.id 
+                        ? 'bg-blue-50 border border-blue-200 shadow-sm' 
+                        : 'hover:bg-gray-50 border border-transparent'">
+                    <div class="flex items-center flex-1 min-w-0">
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" 
+                             :class="selectedParser?.id === parser.id ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'"
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span class="text-sm font-medium truncate flex-1"
+                              :class="selectedParser?.id === parser.id ? 'text-blue-900' : 'text-gray-700 group-hover:text-gray-900'"
+                              x-text="parser.nombre"></span>
                     </div>
+                    <button 
+                        @click.stop="editarParser($event, parser.id)" 
+                        class="ml-2 p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        :class="selectedParser?.id === parser.id 
+                            ? 'text-blue-600 hover:bg-blue-100 opacity-100' 
+                            : 'text-gray-400 hover:text-blue-600 hover:bg-gray-100'">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 102.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </button>
                 </div>
             </template>
         </nav>

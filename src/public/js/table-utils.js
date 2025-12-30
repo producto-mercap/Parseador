@@ -6,49 +6,11 @@
 
 /**
  * Sincroniza la scrollbar superior con la inferior
+ * (Función deshabilitada - scrollbar superior eliminada)
  */
 function setupTableScrollSync() {
-    const tableContainer = document.getElementById('tableScrollContainer');
-    const scrollbarTop = document.getElementById('tableScrollbarTop');
-    const scrollbarTopInner = document.getElementById('tableScrollbarTopInner');
-    const scrollbarTopContent = document.getElementById('tableScrollbarTopContent');
-    
-    if (!tableContainer || !scrollbarTop || !scrollbarTopInner || !scrollbarTopContent) {
-        return;
-    }
-
-    // Sincronizar ancho del contenido
-    function syncScrollbarWidth() {
-        const table = tableContainer.querySelector('.data-table');
-        if (table) {
-            scrollbarTopContent.style.width = table.scrollWidth + 'px';
-            const hasHorizontalScroll = tableContainer.scrollWidth > tableContainer.clientWidth;
-            scrollbarTop.style.display = hasHorizontalScroll ? 'block' : 'none';
-        }
-    }
-
-    // Sincronizar scroll: inferior -> superior
-    tableContainer.addEventListener('scroll', () => {
-        scrollbarTopInner.scrollLeft = tableContainer.scrollLeft;
-    });
-
-    // Sincronizar scroll: superior -> inferior
-    scrollbarTopInner.addEventListener('scroll', () => {
-        tableContainer.scrollLeft = scrollbarTopInner.scrollLeft;
-    });
-
-    // Sincronizar ancho cuando cambia el tamaño de la tabla
-    const resizeObserver = new ResizeObserver(() => {
-        syncScrollbarWidth();
-    });
-    
-    resizeObserver.observe(tableContainer);
-    
-    // Inicializar
-    syncScrollbarWidth();
-    
-    // Re-sincronizar después de actualizar la tabla
-    setTimeout(syncScrollbarWidth, 100);
+    // Función deshabilitada - la scrollbar superior fue eliminada
+    return;
 }
 
 /**
@@ -128,12 +90,6 @@ function inicializarDragScrollTabla() {
             const deltaX = e.clientX - startX;
             const scrollAmount = deltaX * 1.5; // Factor de velocidad
             tableContainer.scrollLeft = startScrollLeft - scrollAmount;
-            
-            // Sincronizar con scrollbar superior si existe
-            const scrollbarTopInner = document.getElementById('tableScrollbarTopInner');
-            if (scrollbarTopInner) {
-                scrollbarTopInner.scrollLeft = tableContainer.scrollLeft;
-            }
         } else {
             // Modo normal: forzar actualización del cursor en cada movimiento
             // Esto es crítico para Chrome - necesita este "refresh" constante
