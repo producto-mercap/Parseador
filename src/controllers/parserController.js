@@ -31,23 +31,6 @@ function validateParserData(data) {
         throw new Error('El nombre del parseador es requerido');
     }
 
-    if (data.esFormatoJson) {
-        // Si es formato JSON, no necesitamos validar columnas ni secciones
-        // Asegurar que tenga configuración por defecto si no se proporciona
-        if (!data.configJson) {
-            data.configJson = {
-                separador: '.',
-                arrayPrimitivos: 'expandir',
-                arrayObjetos: 'normalizar'
-            };
-        }
-        return {
-            ...data,
-            columnas: [],
-            secciones: []
-        };
-    }
-
     if (!data.incluyeSecciones) {
         // Validar parseador simple
         if (!Array.isArray(data.columnas) || data.columnas.length === 0) {
@@ -160,15 +143,9 @@ function processFormData(formData) {
         delimitador: formData.delimitador,
         cantidadColumnas: parseInt(formData.cantidadColumnas),
         incluyeSecciones: formData.incluyeSecciones === 'true',
-        esFormatoJson: formData.esFormatoJson === 'true',
         columnas: [],
         secciones: []
     };
-
-    if (parser.esFormatoJson) {
-        // Si es formato JSON, no necesitamos procesar columnas ni secciones
-        return parser;
-    }
 
     if (!parser.incluyeSecciones) {
         // Procesar columnas del parseador simple
