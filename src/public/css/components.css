@@ -298,9 +298,7 @@
 
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
-}
-
-/* Mejoras para el panel principal */
+}/* Mejoras para el panel principal */
 #mainContentPanel {
     background: #f9fafb;
 }
@@ -323,4 +321,3 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
-
