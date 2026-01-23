@@ -57,14 +57,19 @@ function inicializarDragScrollTabla() {
     
     // Mousedown: iniciar arrastre
     const handleMouseDown = (e) => {
-        // No arrastrar si se hace click en elementos interactivos
-        if (e.target.closest('button') || 
+        // No arrastrar si se hace click en elementos interactivos o en modo edición
+        // (si no, el preventDefault bloquea el caret/tecleo en contenteditable)
+        if (
+            e.target.closest('button') ||
             e.target.closest('a') ||
             e.target.closest('input') ||
             e.target.closest('select') ||
             e.target.closest('textarea') ||
             e.target.closest('.edit-row-btn') ||
-            e.target.closest('.copy-row-btn')) {
+            e.target.closest('.copy-row-btn') ||
+            e.target.closest('[contenteditable="true"]') ||
+            e.target.closest('tr.editing')
+        ) {
             return;
         }
         
@@ -99,7 +104,9 @@ function inicializarDragScrollTabla() {
                 !e.target.closest('select') &&
                 !e.target.closest('textarea') &&
                 !e.target.closest('.edit-row-btn') &&
-                !e.target.closest('.copy-row-btn')) {
+                !e.target.closest('.copy-row-btn') &&
+                !e.target.closest('[contenteditable="true"]') &&
+                !e.target.closest('tr.editing')) {
                 // Aplicar inmediatamente sin requestAnimationFrame para mejor responsividad
                 tableContainer.style.cursor = cursorGrabUrl;
             }
