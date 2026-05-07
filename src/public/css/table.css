@@ -21,23 +21,6 @@
     table-layout: fixed;
 }
 
-/* Sticky header para que los encabezados permanezcan visibles al hacer scroll */
-.data-table thead {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.data-table thead th {
-    background-color: rgb(249 250 251); /* bg-gray-50 */
-}
-
-/* Contenedor de tabla con altura máxima para scroll vertical */
-.table-container {
-    max-height: calc(100vh - 300px);
-    overflow-y: auto !important;
-}
-
 th, td {
     position: relative;
     overflow: hidden;

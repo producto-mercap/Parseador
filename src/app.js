@@ -1,6 +1,6 @@
-// Cargar variables de entorno (primero intenta el archivo de Vercel, luego el local)
+// Cargar variables de entorno (primero archivo de Vercel, luego local)
 require('dotenv').config({ path: '/vercel/share/.env.project' });
-require('dotenv').config(); // fallback para .env local
+require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
