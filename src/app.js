@@ -1,4 +1,5 @@
-﻿// Cargar variables de entorno
+// Cargar variables de entorno (primero archivo de Vercel, luego local)
+require('dotenv').config({ path: '/vercel/share/.env.project' });
 require('dotenv').config();
 
 const express = require('express');
