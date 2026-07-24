@@ -45,17 +45,21 @@ th, td {
 }
 
 /* Permitir que los títulos de las columnas se dividan en varias líneas
-   (ej: "Forma" arriba y "operativa" abajo) para achicar el ancho */
+   (ej: "Venta" "En" "Corto" en líneas separadas) para achicar el ancho
+   pero manteniendo cada palabra entera y legible en horizontal */
 #tableScrollContainer .data-table thead th {
     white-space: normal;
     overflow: visible;
     vertical-align: bottom;
+    min-width: 60px;
+    word-break: break-word;
 }
 
 #tableScrollContainer .data-table thead th span {
     white-space: normal;
     word-break: break-word;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+    display: block;
 }
 
 /* Personalizar la barra de scroll */
