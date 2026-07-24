@@ -10,6 +10,14 @@ const app = express();
 // ConfiguraciÃ³n
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// En la preview/local (fuera del entorno serverless de Vercel) desactivamos el
+// cache de vistas de EJS para que los cambios en las plantillas se reflejen sin
+// reiniciar el proceso. En Vercel (VERCEL definido) se mantiene el cache activo.
+if (!process.env.VERCEL) {
+    app.set('view cache', false);
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Aumentar lÃ­mites para el procesamiento de datos
