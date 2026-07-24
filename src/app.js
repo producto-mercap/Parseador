@@ -29,8 +29,10 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Para desarrollo local
-if (process.env.NODE_ENV !== 'production') {
+// Iniciar el servidor cuando NO estamos en el entorno serverless de Vercel.
+// En Vercel (serverless) la variable de entorno VERCEL está definida y solo
+// exportamos la app. En local o en la preview levantamos un servidor real.
+if (!process.env.VERCEL) {
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, () => {
         console.log(`Servidor corriendo en puerto ${PORT}`);
