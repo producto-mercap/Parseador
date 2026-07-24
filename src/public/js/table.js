@@ -29,19 +29,19 @@ function updateTable(data) {
 
     // Agregar encabezado para los iconos de acción
     const actionsHeader = document.createElement('th');
-    actionsHeader.className = 'px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
-    actionsHeader.style.width = '80px';
+    actionsHeader.className = 'px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+    actionsHeader.style.width = '64px';
     headerRow.appendChild(actionsHeader);
 
     // Actualizar encabezados con funcionalidad de ordenamiento
     if (this.columns && Array.isArray(this.columns)) {
         this.columns.forEach(col => {
             const th = document.createElement('th');
-            th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none';
+            th.className = 'px-3 py-2 text-left text-[11px] leading-tight font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none';
             th.innerHTML = `
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1">
                     <span>${col.nombre}</span>
-                    <svg class="w-4 h-4 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity: 0.5;">
+                    <svg class="w-3 h-3 flex-shrink-0 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity: 0.5;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                     </svg>
                 </div>
@@ -69,8 +69,8 @@ function updateTable(data) {
 
         // Celda para los iconos de acción
         const actionsTd = document.createElement('td');
-        actionsTd.className = 'px-2 py-4 whitespace-nowrap';
-        actionsTd.style.width = '80px';
+        actionsTd.className = 'px-2 py-1 whitespace-nowrap';
+        actionsTd.style.width = '64px';
 
         // Contenedor para los botones
         const actionsContainer = document.createElement('div');
@@ -80,7 +80,7 @@ function updateTable(data) {
         const editButton = document.createElement('button');
         editButton.className = 'edit-row-btn p-1 text-gray-400 hover:text-orange-600 transition-colors';
         editButton.innerHTML = `
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
         `;
@@ -135,7 +135,7 @@ function updateTable(data) {
         const copyButton = document.createElement('button');
         copyButton.className = 'copy-row-btn p-1 text-gray-400 hover:text-blue-600 transition-colors';
         copyButton.innerHTML = `
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
         `;
@@ -170,7 +170,7 @@ function updateTable(data) {
         // Agregar celdas de datos
         this.columns.forEach(col => {
             const td = document.createElement('td');
-            td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500';
+            td.className = 'px-3 py-2 whitespace-nowrap text-xs text-gray-500';
             const claveUnica = col.id ? `col_${col.id}` : col.nombre;
             td.textContent = row[claveUnica] || row[col.nombre] || '';
             tr.appendChild(td);

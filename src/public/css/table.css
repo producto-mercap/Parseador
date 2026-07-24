@@ -44,6 +44,25 @@ th, td {
     white-space: nowrap;
 }
 
+/* Permitir que los títulos de las columnas se dividan en varias líneas
+   SOLO entre palabras (ej: "Venta" "En" "Corto"), manteniendo cada
+   palabra entera y sin cortar palabras individuales como "Comitente" */
+#tableScrollContainer .data-table thead th {
+    white-space: normal;
+    overflow: visible;
+    vertical-align: bottom;
+    min-width: 80px;
+    word-break: normal;
+    overflow-wrap: normal;
+}
+
+#tableScrollContainer .data-table thead th span {
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+    display: block;
+}
+
 /* Personalizar la barra de scroll */
 .overflow-y-auto::-webkit-scrollbar {
     width: 6px;
