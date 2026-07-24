@@ -29,7 +29,7 @@ function updateTable(data) {
 
     // Agregar encabezado para los iconos de acción
     const actionsHeader = document.createElement('th');
-    actionsHeader.className = 'px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+    actionsHeader.className = 'px-1.5 py-1 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider';
     actionsHeader.style.width = '64px';
     headerRow.appendChild(actionsHeader);
 
@@ -37,7 +37,7 @@ function updateTable(data) {
     if (this.columns && Array.isArray(this.columns)) {
         this.columns.forEach(col => {
             const th = document.createElement('th');
-            th.className = 'px-3 py-2 text-left text-[11px] leading-tight font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none';
+            th.className = 'px-2 py-1 text-left text-xs leading-tight font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none';
             th.innerHTML = `
                 <div class="flex items-center gap-1">
                     <span>${col.nombre}</span>
@@ -170,7 +170,7 @@ function updateTable(data) {
         // Agregar celdas de datos
         this.columns.forEach(col => {
             const td = document.createElement('td');
-            td.className = 'px-3 py-2 whitespace-nowrap text-xs text-gray-500';
+            td.className = 'px-2 py-1 whitespace-nowrap text-xs text-gray-500';
             const claveUnica = col.id ? `col_${col.id}` : col.nombre;
             td.textContent = row[claveUnica] || row[col.nombre] || '';
             tr.appendChild(td);
