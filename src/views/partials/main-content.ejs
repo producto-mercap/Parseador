@@ -57,9 +57,25 @@
     <div class="flex flex-col gap-6">
         <!-- Contenedor de entrada con ancho completo -->
         <div class="w-full">
+            <!-- Encabezado del área de entrada con botón para colapsar/expandir -->
+            <div class="input-toggle-bar">
+                <span class="input-toggle-label">Contenido a parsear</span>
+                <button
+                    type="button"
+                    @click="inputCollapsed = !inputCollapsed"
+                    class="input-toggle-btn"
+                    :aria-expanded="(!inputCollapsed).toString()"
+                    :title="inputCollapsed ? 'Expandir el área de contenido' : 'Colapsar el área de contenido'">
+                    <span x-text="inputCollapsed ? 'Expandir' : 'Colapsar'"></span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 input-toggle-chevron" :class="{ 'is-collapsed': inputCollapsed }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                    </svg>
+                </button>
+            </div>
             <textarea 
                 x-model="manualInput"
                 class="custom-textarea w-full"
+                :class="{ 'custom-textarea--collapsed': inputCollapsed }"
                 placeholder="Ingrese o pegue el contenido a parsear..."></textarea>
         </div>
 

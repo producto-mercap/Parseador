@@ -59,6 +59,46 @@
     pointer-events: none;
 }
 
+/* Barra superior del área de entrada con el botón de colapsar/expandir */
+.input-toggle-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.input-toggle-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.input-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #3b82f6;
+    padding: 4px 8px;
+    border-radius: 0.375rem;
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.input-toggle-btn:hover {
+    background-color: #eff6ff;
+}
+
+.input-toggle-chevron {
+    transition: transform 0.25s ease;
+}
+
+.input-toggle-chevron.is-collapsed {
+    transform: rotate(180deg);
+}
+
 /* Estilos para el textarea redimensionable */
 .custom-textarea {
     width: 100%;
@@ -70,6 +110,14 @@
     overflow: auto;
     line-height: 1.5;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: min-height 0.25s ease, height 0.25s ease;
+}
+
+/* Estado colapsado: reduce la altura para dejar espacio a la tabla de registros */
+.custom-textarea--collapsed {
+    min-height: 60px;
+    height: 60px;
+    resize: none;
 }
 
 .custom-textarea:focus {

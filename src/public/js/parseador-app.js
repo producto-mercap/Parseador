@@ -42,6 +42,7 @@ document.addEventListener('alpine:init', () => {
         sidebarCollapsed: false,
         saving: false,
         isParsing: false,
+        inputCollapsed: false,
 
         async actualizarParsers() {
             const parsers = await window.parserManagement?.actualizarParsers();
