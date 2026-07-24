@@ -44,6 +44,20 @@ th, td {
     white-space: nowrap;
 }
 
+/* Permitir que los títulos de las columnas se dividan en varias líneas
+   (ej: "Forma" arriba y "operativa" abajo) para achicar el ancho */
+#tableScrollContainer .data-table thead th {
+    white-space: normal;
+    overflow: visible;
+    vertical-align: bottom;
+}
+
+#tableScrollContainer .data-table thead th span {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
 /* Personalizar la barra de scroll */
 .overflow-y-auto::-webkit-scrollbar {
     width: 6px;
