@@ -63,6 +63,18 @@ th, td {
     display: block;
 }
 
+/* Línea vertical suave entre columnas */
+#tableScrollContainer .data-table thead th,
+#tableScrollContainer .data-table tbody td {
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Quitar la línea de la última columna para que no quede un borde sobrante */
+#tableScrollContainer .data-table thead th:last-child,
+#tableScrollContainer .data-table tbody td:last-child {
+    border-right: none;
+}
+
 /* Personalizar la barra de scroll */
 .overflow-y-auto::-webkit-scrollbar {
     width: 6px;
