@@ -210,19 +210,25 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
 
     // Agregar encabezado para los iconos de acción
     const actionsHeader = document.createElement('th');
-    actionsHeader.className = 'px-1.5 py-1 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider';
+    actionsHeader.className = 'px-1 py-0.5 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider';
     actionsHeader.style.width = '80px';
     headerRow.appendChild(actionsHeader);
+
+    // Correcciones de typos en nombres de columnas (solo afecta la visualización)
+    const correccionesNombreColumna = {
+        'Ofera': 'Oferta'
+    };
+    const normalizarNombreColumna = (nombre) => correccionesNombreColumna[nombre] || nombre;
 
     // Actualizar encabezados con funcionalidad de ordenamiento
     if (columns && Array.isArray(columns)) {
         columns.forEach(col => {
             const th = document.createElement('th');
-            th.className = 'px-2 py-1 text-left text-xs font-bold text-gray-500 uppercase tracking-wider hover:bg-gray-100 select-none';
+            th.className = 'px-1 py-0.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider hover:bg-gray-100 select-none';
             th.dataset.columnName = col.nombre;
             th.innerHTML = `
                 <div class="flex items-center gap-2">
-                    <span>${col.nombre}</span>
+                    <span>${normalizarNombreColumna(col.nombre)}</span>
                     <svg class="w-4 h-4 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
                     </svg>
@@ -272,7 +278,7 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
         
         // Celda para los iconos de acción
         const actionsTd = document.createElement('td');
-        actionsTd.className = 'px-2 py-2 whitespace-nowrap';
+        actionsTd.className = 'px-1 py-0.5 whitespace-nowrap';
         actionsTd.style.width = '80px';
         
         // Contenedor para los botones
@@ -367,7 +373,7 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
         
         columns.forEach(col => {
             const td = document.createElement('td');
-            td.className = 'px-2 py-1 whitespace-nowrap text-xs text-gray-500';
+            td.className = 'px-1 py-0.5 whitespace-nowrap text-xs text-gray-500';
             const claveUnica = col.id ? `col_${col.id}` : col.nombre;
             td.textContent = row[claveUnica] || row[col.nombre] || '';
             tr.appendChild(td);
