@@ -210,7 +210,7 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
 
     // Agregar encabezado para los iconos de acción
     const actionsHeader = document.createElement('th');
-    actionsHeader.className = 'px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+    actionsHeader.className = 'px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
     actionsHeader.style.width = '80px';
     headerRow.appendChild(actionsHeader);
 
@@ -218,7 +218,7 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
     if (columns && Array.isArray(columns)) {
         columns.forEach(col => {
             const th = document.createElement('th');
-            th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100 select-none';
+            th.className = 'px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100 select-none';
             th.dataset.columnName = col.nombre;
             th.innerHTML = `
                 <div class="flex items-center gap-2">
@@ -272,7 +272,7 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
         
         // Celda para los iconos de acción
         const actionsTd = document.createElement('td');
-        actionsTd.className = 'px-2 py-4 whitespace-nowrap';
+        actionsTd.className = 'px-2 py-2 whitespace-nowrap';
         actionsTd.style.width = '80px';
         
         // Contenedor para los botones
@@ -367,7 +367,7 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
         
         columns.forEach(col => {
             const td = document.createElement('td');
-            td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500';
+            td.className = 'px-3 py-2 whitespace-nowrap text-sm text-gray-500';
             const claveUnica = col.id ? `col_${col.id}` : col.nombre;
             td.textContent = row[claveUnica] || row[col.nombre] || '';
             tr.appendChild(td);
