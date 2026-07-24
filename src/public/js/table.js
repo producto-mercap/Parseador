@@ -37,7 +37,7 @@ function updateTable(data) {
     if (this.columns && Array.isArray(this.columns)) {
         this.columns.forEach(col => {
             const th = document.createElement('th');
-            th.className = 'px-2 py-1 text-left text-[10px] leading-tight font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none';
+            th.className = 'px-2 py-1 text-left text-xs leading-tight font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none';
             th.innerHTML = `
                 <div class="flex items-center gap-1">
                     <span>${col.nombre}</span>

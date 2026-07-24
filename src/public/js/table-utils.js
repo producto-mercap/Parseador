@@ -218,7 +218,7 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
     if (columns && Array.isArray(columns)) {
         columns.forEach(col => {
             const th = document.createElement('th');
-            th.className = 'px-2 py-1 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider hover:bg-gray-100 select-none';
+            th.className = 'px-2 py-1 text-left text-xs font-bold text-gray-500 uppercase tracking-wider hover:bg-gray-100 select-none';
             th.dataset.columnName = col.nombre;
             th.innerHTML = `
                 <div class="flex items-center gap-2">
