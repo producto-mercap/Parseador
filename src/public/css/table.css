@@ -45,20 +45,21 @@ th, td {
 }
 
 /* Permitir que los títulos de las columnas se dividan en varias líneas
-   (ej: "Venta" "En" "Corto" en líneas separadas) para achicar el ancho
-   pero manteniendo cada palabra entera y legible en horizontal */
+   SOLO entre palabras (ej: "Venta" "En" "Corto"), manteniendo cada
+   palabra entera y sin cortar palabras individuales como "Comitente" */
 #tableScrollContainer .data-table thead th {
     white-space: normal;
     overflow: visible;
     vertical-align: bottom;
-    min-width: 60px;
-    word-break: break-word;
+    min-width: 80px;
+    word-break: normal;
+    overflow-wrap: normal;
 }
 
 #tableScrollContainer .data-table thead th span {
     white-space: normal;
-    word-break: break-word;
-    overflow-wrap: break-word;
+    word-break: normal;
+    overflow-wrap: normal;
     display: block;
 }
 
