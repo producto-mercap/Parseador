@@ -21,6 +21,22 @@
     table-layout: fixed;
 }
 
+/* Altura máxima del contenedor para habilitar scroll vertical propio */
+#tableScrollContainer.table-container {
+    max-height: calc(100vh - 220px);
+    overflow: auto;
+}
+
+/* Encabezados fijos al hacer scroll vertical dentro de la tabla */
+#tableScrollContainer .data-table thead th {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    /* Fondo sólido para que las filas no se vean por detrás al scrollear */
+    background-color: #f9fafb; /* equivalente a bg-gray-50 */
+}
+
 th, td {
     position: relative;
     overflow: hidden;
