@@ -214,6 +214,12 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
     actionsHeader.style.width = '80px';
     headerRow.appendChild(actionsHeader);
 
+    // Correcciones de typos en nombres de columnas (solo afecta la visualización)
+    const correccionesNombreColumna = {
+        'Ofera': 'Oferta'
+    };
+    const normalizarNombreColumna = (nombre) => correccionesNombreColumna[nombre] || nombre;
+
     // Actualizar encabezados con funcionalidad de ordenamiento
     if (columns && Array.isArray(columns)) {
         columns.forEach(col => {
@@ -222,7 +228,7 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
             th.dataset.columnName = col.nombre;
             th.innerHTML = `
                 <div class="flex items-center gap-2">
-                    <span>${col.nombre}</span>
+                    <span>${normalizarNombreColumna(col.nombre)}</span>
                     <svg class="w-4 h-4 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
                     </svg>
