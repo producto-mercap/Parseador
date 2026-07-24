@@ -313,11 +313,20 @@
     box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
 }
 
+/* Encabezado del parseador: título y botones en la misma fila */
+.parser-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
 /* Títulos de Página - Estilo estándar según .cursorrules */
 .page-title {
     font-size: 32px;
     font-weight: 500;
-    margin-bottom: 8px;
+    margin-bottom: 0;
     letter-spacing: 0;
     color: #656769;
     font-family: 'Google Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
