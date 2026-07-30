@@ -222,12 +222,17 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
 
     // Actualizar encabezados con funcionalidad de ordenamiento
     if (columns && Array.isArray(columns)) {
-        columns.forEach(col => {
+        columns.forEach((col, colIndex) => {
+            const claveUnica = col.id ? `col_${col.id}` : col.nombre;
             const th = document.createElement('th');
             th.className = 'px-1 py-0.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider hover:bg-gray-100 select-none';
             th.dataset.columnName = col.nombre;
+            th.dataset.columnKey = claveUnica;
+            // colIndex + 1 porque la primera columna es la de acciones
+            th.dataset.colIndex = colIndex + 1;
             th.innerHTML = `
-                <div class="flex items-center gap-2">
+                <div class="th-content flex items-center gap-2">
+                    <button type="button" class="col-toggle-btn" title="Ocultar columna" aria-label="Ocultar columna">−</button>
                     <span>${normalizarNombreColumna(col.nombre)}</span>
                     <svg class="w-4 h-4 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
@@ -236,6 +241,14 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
             `;
             if (onSort) {
                 th.onclick = () => onSort(col.nombre);
+            }
+            // El botón toggle no debe disparar el ordenamiento
+            const toggleBtn = th.querySelector('.col-toggle-btn');
+            if (toggleBtn) {
+                toggleBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleColumn(claveUnica);
+                };
             }
             headerRow.appendChild(th);
         });
@@ -371,17 +384,28 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
         actionsTd.appendChild(actionsContainer);
         tr.appendChild(actionsTd);
         
-        columns.forEach(col => {
+        columns.forEach((col, colIndex) => {
             const td = document.createElement('td');
             td.className = 'px-1 py-0.5 whitespace-nowrap text-xs text-gray-500';
             const claveUnica = col.id ? `col_${col.id}` : col.nombre;
+            td.dataset.columnKey = claveUnica;
+            // colIndex + 1 porque la primera columna es la de acciones
+            td.dataset.colIndex = colIndex + 1;
             td.textContent = row[claveUnica] || row[col.nombre] || '';
+            td.onclick = (e) => {
+                // No seleccionar mientras se edita la fila
+                if (tr.classList.contains('editing')) return;
+                selectCell(tr, td.dataset.colIndex);
+            };
             tr.appendChild(td);
         });
         
         tbody.appendChild(tr);
     });
     
+    // Reaplicar el estado de columnas ocultas (persiste entre re-renders y ordenamientos)
+    applyHiddenColumns();
+
     // Configurar detección de scroll horizontal (ya no necesario para botones)
     // setupScrollDetection();
     
@@ -396,6 +420,84 @@ function updateTable(data, columns, onSort, tableDataRef, sortState) {
     if (tableDataRef) {
         tableDataRef.data = data;
     }
+}
+
+/**
+ * Conjunto de claves de columnas actualmente ocultas (persiste entre re-renders)
+ */
+window.hiddenColumns = window.hiddenColumns || new Set();
+
+/**
+ * Oculta/muestra una columna por su clave única y persiste el estado
+ * @param {string} colKey - Clave única de la columna (data-column-key)
+ */
+function toggleColumn(colKey) {
+    if (window.hiddenColumns.has(colKey)) {
+        window.hiddenColumns.delete(colKey);
+    } else {
+        window.hiddenColumns.add(colKey);
+    }
+    applyHiddenColumns();
+}
+
+/**
+ * Aplica el estado de columnas ocultas al DOM de la tabla actual
+ */
+function applyHiddenColumns() {
+    const table = document.querySelector('.data-table');
+    if (!table) return;
+
+    // Encabezados
+    table.querySelectorAll('thead th[data-column-key]').forEach(th => {
+        const colKey = th.dataset.columnKey;
+        const hidden = window.hiddenColumns.has(colKey);
+        th.classList.toggle('col-hidden', hidden);
+        const btn = th.querySelector('.col-toggle-btn');
+        if (btn) {
+            btn.textContent = hidden ? '+' : '−';
+            btn.title = hidden ? 'Mostrar columna' : 'Ocultar columna';
+            btn.setAttribute('aria-label', btn.title);
+        }
+    });
+
+    // Celdas de datos
+    table.querySelectorAll('tbody td[data-column-key]').forEach(td => {
+        td.classList.toggle('col-hidden', window.hiddenColumns.has(td.dataset.columnKey));
+    });
+}
+
+/**
+ * Resalta toda la fila y toda la columna de la celda seleccionada.
+ * Una sola selección a la vez; volver a hacer click en la misma celda la deselecciona.
+ * @param {HTMLElement} tr - Fila de la celda
+ * @param {string|number} colIndex - Índice de columna (data-col-index)
+ */
+function selectCell(tr, colIndex) {
+    const table = document.querySelector('.data-table');
+    if (!table) return;
+
+    const yaSeleccionada = tr.classList.contains('row-selected') &&
+        String(window.selectedColIndex) === String(colIndex);
+
+    // Limpiar selección previa
+    table.querySelectorAll('.row-selected').forEach(el => el.classList.remove('row-selected'));
+    table.querySelectorAll('.col-selected').forEach(el => el.classList.remove('col-selected'));
+
+    if (yaSeleccionada) {
+        window.selectedColIndex = null;
+        return;
+    }
+
+    // Resaltar la fila completa
+    tr.classList.add('row-selected');
+    tr.querySelectorAll('td').forEach(td => td.classList.add('row-selected'));
+
+    // Resaltar la columna completa (encabezado + celdas)
+    table.querySelectorAll(`[data-col-index="${colIndex}"]`).forEach(el => {
+        el.classList.add('col-selected');
+    });
+
+    window.selectedColIndex = colIndex;
 }
 
 /**
@@ -476,6 +578,9 @@ function setupScrollDetection() {
 // Hacer disponible globalmente
 window.updateTable = updateTable;
 window.sortTable = sortTable;
+window.toggleColumn = toggleColumn;
+window.applyHiddenColumns = applyHiddenColumns;
+window.selectCell = selectCell;
 window.setupScrollDetection = setupScrollDetection;
 window.setupTableScrollSync = setupTableScrollSync;
 window.inicializarDragScrollTabla = inicializarDragScrollTabla;

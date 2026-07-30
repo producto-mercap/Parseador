@@ -279,3 +279,74 @@ div.overflow-x-auto::-webkit-scrollbar-thumb:hover,
     -webkit-user-select: text !important;
 }
 
+/* ============================================================
+   Botón para ocultar/mostrar columnas
+   ============================================================ */
+.col-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+    background: #ffffff;
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer !important;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.col-toggle-btn:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+/* Columna oculta: se colapsa a una franja angosta y se oculta el contenido */
+#tableScrollContainer .data-table th.col-hidden,
+#tableScrollContainer .data-table td.col-hidden {
+    max-width: 26px;
+    min-width: 26px;
+    width: 26px;
+    padding-left: 2px;
+    padding-right: 2px;
+    overflow: hidden;
+}
+
+/* Ocultar el nombre y el icono de orden, pero conservar el botón toggle */
+#tableScrollContainer .data-table th.col-hidden span,
+#tableScrollContainer .data-table th.col-hidden .sort-icon {
+    display: none !important;
+}
+
+/* Ocultar el texto de las celdas de una columna colapsada */
+#tableScrollContainer .data-table td.col-hidden {
+    color: transparent !important;
+    text-indent: -9999px;
+}
+
+/* ============================================================
+   Resaltado de fila y columna seleccionadas
+   ============================================================ */
+#tableScrollContainer .data-table tbody td.row-selected {
+    background-color: rgba(59, 130, 246, 0.14);
+}
+
+#tableScrollContainer .data-table thead th.col-selected,
+#tableScrollContainer .data-table tbody td.col-selected {
+    background-color: rgba(59, 130, 246, 0.14);
+}
+
+/* Intersección fila + columna: un poco más marcada */
+#tableScrollContainer .data-table tbody td.row-selected.col-selected {
+    background-color: rgba(59, 130, 246, 0.28);
+}
+
+/* Encabezado de columna seleccionada: mantener fondo sticky coherente */
+#tableScrollContainer .data-table thead th.col-selected {
+    background-color: rgba(59, 130, 246, 0.2);
+}
+
