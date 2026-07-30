@@ -476,12 +476,10 @@ function selectCell(tr, colIndex) {
     const table = document.querySelector('.data-table');
     if (!table) return;
 
-    const yaSeleccionada = tr.classList.contains('row-selected') &&
-        String(window.selectedColIndex) === String(colIndex);
+    const yaSeleccionada = tr.classList.contains('row-selected');
 
     // Limpiar selección previa
     table.querySelectorAll('.row-selected').forEach(el => el.classList.remove('row-selected'));
-    table.querySelectorAll('.col-selected').forEach(el => el.classList.remove('col-selected'));
 
     if (yaSeleccionada) {
         window.selectedColIndex = null;
@@ -491,11 +489,6 @@ function selectCell(tr, colIndex) {
     // Resaltar la fila completa
     tr.classList.add('row-selected');
     tr.querySelectorAll('td').forEach(td => td.classList.add('row-selected'));
-
-    // Resaltar la columna completa (encabezado + celdas)
-    table.querySelectorAll(`[data-col-index="${colIndex}"]`).forEach(el => {
-        el.classList.add('col-selected');
-    });
 
     window.selectedColIndex = colIndex;
 }
