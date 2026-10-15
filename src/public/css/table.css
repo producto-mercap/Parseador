@@ -2,6 +2,10 @@
  * Estilos para tablas y scrollbars
  */
 
+[x-cloak] {
+    display: none !important;
+}
+
 .resize-handle {
     position: absolute;
     right: 0;
@@ -21,10 +25,16 @@
     table-layout: fixed;
 }
 
-/* Altura máxima del contenedor para habilitar scroll vertical propio */
+/* Altura máxima del contenedor para habilitar scroll vertical propio.
+   El padding inferior separa la barra de scroll horizontal de la última fila
+   para que nunca quede pegada (o encima) de los valores. */
 #tableScrollContainer.table-container {
-    max-height: calc(100vh - 220px);
+    max-height: calc(100vh - 260px);
     overflow: auto;
+    padding-bottom: 6px;
+    scrollbar-width: auto;
+    scrollbar-color: #b6bcc6 #f3f4f6;
+    scrollbar-gutter: stable;
 }
 
 /* Encabezados fijos al hacer scroll vertical dentro de la tabla */
@@ -44,19 +54,45 @@ th, td {
     white-space: nowrap;
 }
 
-/* Permitir que los títulos de las columnas se dividan en varias líneas
-   SOLO entre palabras (ej: "Venta" "En" "Corto"), manteniendo cada
-   palabra entera y sin cortar palabras individuales como "Comitente" */
+/* ============================================================
+   Encabezados
+   ============================================================ */
 #tableScrollContainer .data-table thead th {
+    padding: 4px 6px;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     white-space: normal;
     overflow: visible;
     vertical-align: bottom;
     min-width: 60px;
     word-break: normal;
     overflow-wrap: normal;
+    user-select: none;
 }
 
-#tableScrollContainer .data-table thead th span {
+#tableScrollContainer .data-table thead th.actions-header {
+    width: 56px;
+    min-width: 56px;
+}
+
+#tableScrollContainer .data-table thead th.data-th:hover {
+    background-color: #f1f3f6;
+}
+
+#tableScrollContainer .th-content {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Permitir que los títulos de las columnas se dividan en varias líneas
+   SOLO entre palabras (ej: "Venta" "En" "Corto"), manteniendo cada
+   palabra entera y sin cortar palabras individuales como "Comitente" */
+#tableScrollContainer .th-label {
     white-space: normal;
     word-break: normal;
     overflow-wrap: normal;
@@ -75,278 +111,468 @@ th, td {
     border-right: none;
 }
 
-/* Personalizar la barra de scroll */
-.overflow-y-auto::-webkit-scrollbar {
-    width: 6px;
+/* ============================================================
+   Celdas y formato de valores según su tipo
+   ============================================================ */
+#tableScrollContainer .data-table tbody tr:hover td {
+    background-color: #f9fafb;
 }
 
-.overflow-y-auto::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 3px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-    background: #666;
-}
-
-/* Ocultar scrollbar en Firefox */
-.overflow-y-auto {
-    scrollbar-width: thin;
-    scrollbar-color: #888 #f1f1f1;
-}
-
-/* Personalizar la barra de scroll horizontal para la tabla - MUY GRANDE */
-.table-container::-webkit-scrollbar {
-    height: 40px !important;
-}
-
-.table-container::-webkit-scrollbar-track {
-    background: #f1f1f1 !important;
-    border-radius: 20px !important;
-    margin: 4px 0;
-}
-
-.table-container::-webkit-scrollbar-thumb {
-    background: #888 !important;
-    border-radius: 20px !important;
-    min-height: 40px !important;
-    border: 4px solid #f1f1f1;
-}
-
-.table-container::-webkit-scrollbar-thumb:hover {
-    background: #666 !important;
-}
-
-/* Para Firefox - scrollbar más grande */
-.table-container {
-    scrollbar-width: auto !important;
-    scrollbar-color: #888 #f1f1f1 !important;
-}
-
-/* Asegurar que todos los contenedores con overflow-x-auto tengan scrollbar grande */
-div.overflow-x-auto::-webkit-scrollbar,
-.overflow-x-auto::-webkit-scrollbar,
-[class*="overflow-x-auto"]::-webkit-scrollbar {
-    height: 40px !important;
-}
-
-div.overflow-x-auto::-webkit-scrollbar-track,
-.overflow-x-auto::-webkit-scrollbar-track,
-[class*="overflow-x-auto"]::-webkit-scrollbar-track {
-    background: #f1f1f1 !important;
-    border-radius: 20px !important;
-    margin: 4px 0;
-}
-
-div.overflow-x-auto::-webkit-scrollbar-thumb,
-.overflow-x-auto::-webkit-scrollbar-thumb,
-[class*="overflow-x-auto"]::-webkit-scrollbar-thumb {
-    background: #888 !important;
-    border-radius: 20px !important;
-    min-height: 40px !important;
-    border: 4px solid #f1f1f1;
-}
-
-div.overflow-x-auto::-webkit-scrollbar-thumb:hover,
-.overflow-x-auto::-webkit-scrollbar-thumb:hover,
-[class*="overflow-x-auto"]::-webkit-scrollbar-thumb:hover {
-    background: #666 !important;
-}
-
-/* Estilo global para scrollbars horizontales - aplicar a TODOS los elementos */
-/* Solo aplicar a elementos que tienen overflow-x */
-[style*="overflow-x"],
-[class*="overflow-x"] {
-    scrollbar-width: auto !important;
-}
-
-[style*="overflow-x"]::-webkit-scrollbar,
-[class*="overflow-x"]::-webkit-scrollbar {
-    height: 40px !important;
-}
-
-[style*="overflow-x"]::-webkit-scrollbar-track,
-[class*="overflow-x"]::-webkit-scrollbar-track {
-    background: #f1f1f1 !important;
-    border-radius: 20px !important;
-    margin: 4px 0;
-}
-
-[style*="overflow-x"]::-webkit-scrollbar-thumb,
-[class*="overflow-x"]::-webkit-scrollbar-thumb {
-    background: #888 !important;
-    border-radius: 20px !important;
-    min-height: 40px !important;
-    border: 4px solid #f1f1f1;
-}
-
-[style*="overflow-x"]::-webkit-scrollbar-thumb:hover,
-[class*="overflow-x"]::-webkit-scrollbar-thumb:hover {
-    background: #666 !important;
-}
-
-/* Scrollbar superior duplicada (sticky) */
-.table-scrollbar-top {
-    margin-bottom: 0;
-    border-radius: 8px 8px 0 0;
-}
-
-.table-scrollbar-top::-webkit-scrollbar {
-    height: 40px !important;
-}
-
-.table-scrollbar-top::-webkit-scrollbar-track {
-    background: #f1f1f1 !important;
-    border-radius: 20px !important;
-    margin: 4px 0;
-}
-
-.table-scrollbar-top::-webkit-scrollbar-thumb {
-    background: #888 !important;
-    border-radius: 20px !important;
-    min-height: 40px !important;
-    border: 4px solid #f1f1f1;
-}
-
-.table-scrollbar-top::-webkit-scrollbar-thumb:hover {
-    background: #666 !important;
-}
-
-.table-scrollbar-top {
-    scrollbar-width: auto !important;
-    scrollbar-color: #888 #f1f1f1 !important;
-}
-
-/* Cursor grab para desplazamiento horizontal de la tabla */
-/* Replicar exactamente el comportamiento del Gantt */
-/* IMPORTANTE: Usar máxima especificidad para sobrescribir clases de Tailwind como cursor-pointer */
-#tableScrollContainer {
-    cursor: url('/images/cursor-grab.png') 12 12, url('/images/cursor-grab.svg') 12 12, -webkit-grab, grab !important;
-    user-select: none;
-}
-
-#tableScrollContainer.table-dragging {
-    cursor: url('/images/cursor-grabbing.png') 12 12, url('/images/cursor-grabbing.svg') 12 12, -webkit-grabbing, grabbing !important;
-}
-
-/* Hover del contenedor mantiene cursor grab */
-#tableScrollContainer:hover:not(.table-dragging) {
-    cursor: url('/images/cursor-grab.png') 12 12, url('/images/cursor-grab.svg') 12 12, -webkit-grab, grab !important;
-}
-
-/* Los botones y elementos interactivos mantienen cursor pointer (manito con dedo índice) - debe ir primero */
-#tableScrollContainer button,
-#tableScrollContainer .edit-row-btn,
-#tableScrollContainer .copy-row-btn,
-#tableScrollContainer a {
-    cursor: pointer !important;
-}
-
-/* Asegurar que las filas y celdas de la tabla hereden el cursor grab */
-/* Sobrescribir explícitamente cualquier clase cursor-pointer de Tailwind */
-#tableScrollContainer .data-table,
-#tableScrollContainer .data-table thead,
-#tableScrollContainer .data-table thead tr,
-#tableScrollContainer .data-table thead th,
-#tableScrollContainer .data-table tbody,
-#tableScrollContainer .data-table tbody tr,
 #tableScrollContainer .data-table tbody td {
-    cursor: url('/images/cursor-grab.png') 12 12, url('/images/cursor-grab.svg') 12 12, -webkit-grab, grab !important;
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    line-height: 1.1rem;
+    color: #374151;
+    vertical-align: middle;
 }
 
-/* Asegurar que todos los elementos hijos del contenedor hereden el cursor grab, excepto botones y elementos interactivos */
-#tableScrollContainer *:not(button):not(a):not(input):not(select):not(textarea):not(.edit-row-btn):not(.copy-row-btn) {
-    cursor: url('/images/cursor-grab.png') 12 12, url('/images/cursor-grab.svg') 12 12, -webkit-grab, grab !important;
+#tableScrollContainer .data-table tbody td.actions-cell {
+    width: 56px;
+    padding: 1px 4px;
 }
 
-/* Asegurar que los elementos dentro de botones y elementos interactivos NO hereden el cursor grab */
-#tableScrollContainer button *,
-#tableScrollContainer .edit-row-btn *,
-#tableScrollContainer .copy-row-btn *,
-#tableScrollContainer a * {
-    cursor: inherit !important;
+.row-actions {
+    display: flex;
+    gap: 2px;
 }
 
-/* Asegurar que las celdas editables mantengan cursor text */
-#tableScrollContainer td[contenteditable="true"] {
+.edit-row-btn,
+.copy-row-btn {
+    display: inline-flex;
+    padding: 3px;
+    border-radius: 4px;
+    color: #9ca3af;
+    transition: color 0.15s, background-color 0.15s;
+}
+
+.edit-row-btn:hover,
+.edit-row-btn.is-active {
+    color: #ea580c;
+    background-color: #fff7ed;
+}
+
+.copy-row-btn:hover {
+    color: #2563eb;
+    background-color: #eff6ff;
+}
+
+.edit-row-btn.is-success,
+.copy-row-btn.is-success {
+    color: #16a34a;
+}
+
+/* Números alineados a la derecha con dígitos de ancho fijo */
+#tableScrollContainer .data-table tbody td.cell--num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: #1e3a8a;
+}
+
+#tableScrollContainer .data-table tbody td.cell--bool,
+#tableScrollContainer .data-table tbody td.cell--null {
+    text-align: center;
+}
+
+.cell-null {
+    color: #b0b6c0;
+    font-style: italic;
+}
+
+.cell-bool {
+    display: inline-block;
+    padding: 0 6px;
+    border-radius: 9999px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1rem;
+}
+
+.cell-bool--true {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.cell-bool--false {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* Celdas en edición */
+#tableScrollContainer td.cell-editing {
+    background-color: #fefce8 !important;
+    outline: 1px solid #fdba74;
+    outline-offset: -1px;
     cursor: text !important;
     user-select: text !important;
     -webkit-user-select: text !important;
 }
 
+/* Fila seleccionada */
+#tableScrollContainer .data-table tbody tr.row-selected td {
+    background-color: rgba(59, 130, 246, 0.14);
+}
+
 /* ============================================================
-   Botón para ocultar/mostrar columnas
+   Botón para ocultar columnas (aparece al pasar el mouse)
    ============================================================ */
-.col-toggle-btn {
+.col-hide-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
     flex: 0 0 auto;
-    border: 1px solid rgba(0, 0, 0, 0.15);
+    width: 20px;
+    height: 20px;
+    margin-left: auto;
+    padding: 3px;
     border-radius: 4px;
-    background: #ffffff;
     color: #6b7280;
-    font-size: 12px;
-    line-height: 1;
-    font-weight: 700;
-    cursor: pointer !important;
-    transition: background-color 0.15s, color 0.15s;
+    opacity: 0;
+    transition: opacity 0.15s, background-color 0.15s, color 0.15s;
 }
 
-.col-toggle-btn:hover {
-    background: #f3f4f6;
+.col-hide-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+#tableScrollContainer th:hover .col-hide-btn,
+.col-hide-btn:focus-visible {
+    opacity: 1;
+}
+
+.col-hide-btn:hover {
+    background-color: #e5e7eb;
     color: #111827;
 }
 
-/* Columna oculta: se colapsa a una franja angosta y se oculta el contenido */
-#tableScrollContainer .data-table th.col-hidden,
-#tableScrollContainer .data-table td.col-hidden {
-    max-width: 26px;
-    min-width: 26px;
-    width: 26px;
-    padding-left: 2px;
-    padding-right: 2px;
-    overflow: hidden;
-}
-
-/* Ocultar el nombre y el icono de orden, pero conservar el botón toggle */
-#tableScrollContainer .data-table th.col-hidden span,
-#tableScrollContainer .data-table th.col-hidden .sort-icon {
-    display: none !important;
-}
-
-/* Ocultar el texto de las celdas de una columna colapsada */
-#tableScrollContainer .data-table td.col-hidden {
-    color: transparent !important;
-    text-indent: -9999px;
+/* En pantallas táctiles no hay hover: mostrar siempre el botón */
+@media (hover: none) {
+    .col-hide-btn {
+        opacity: 0.7;
+    }
 }
 
 /* ============================================================
-   Resaltado de fila y columna seleccionadas
+   Barra de resultados (cantidad, columnas, modo de vista)
    ============================================================ */
-#tableScrollContainer .data-table tbody td.row-selected {
-    background-color: rgba(59, 130, 246, 0.14);
+.results-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
-#tableScrollContainer .data-table thead th.col-selected,
-#tableScrollContainer .data-table tbody td.col-selected {
-    background-color: rgba(59, 130, 246, 0.14);
+.results-count {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #4b5563;
 }
 
-/* Intersección fila + columna: un poco más marcada */
-#tableScrollContainer .data-table tbody td.row-selected.col-selected {
-    background-color: rgba(59, 130, 246, 0.28);
+/* Aviso junto al título del contenido (ej. mensajes extraídos de un log) */
+.input-aviso {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 8px;
+    border-radius: 9999px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #047857;
+    font-size: 0.72rem;
+    font-weight: 500;
 }
 
-/* Encabezado de columna seleccionada: mantener fondo sticky coherente */
-#tableScrollContainer .data-table thead th.col-selected {
-    background-color: rgba(59, 130, 246, 0.2);
+.results-count__partial {
+    font-weight: 400;
+    color: #9ca3af;
 }
 
+.results-count__partial button {
+    margin-left: 4px;
+    font-weight: 600;
+    color: #2563eb;
+}
+
+.results-count__partial button:hover {
+    text-decoration: underline;
+}
+
+.results-toolbar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #374151;
+    font-size: 0.78rem;
+    font-weight: 500;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.toolbar-btn:hover,
+.toolbar-btn.is-active {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.toolbar-btn__badge {
+    padding: 0 6px;
+    border-radius: 9999px;
+    background: #e5e7eb;
+    color: #4b5563;
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.hidden-cols-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 9999px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 0.75rem;
+    border: 1px solid #fed7aa;
+}
+
+.hidden-cols-chip__action {
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.columns-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 30;
+    width: 280px;
+    max-width: calc(100vw - 32px);
+    padding: 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+.columns-menu__search {
+    width: 100%;
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    outline: none;
+}
+
+.columns-menu__search:focus {
+    border-color: #3b82f6;
+}
+
+.columns-menu__shortcuts {
+    display: flex;
+    gap: 12px;
+    padding: 6px 2px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.columns-menu__shortcuts button {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #2563eb;
+}
+
+.columns-menu__shortcuts button:hover {
+    text-decoration: underline;
+}
+
+.columns-menu__list {
+    max-height: 320px;
+    overflow-y: auto;
+    padding-top: 4px;
+}
+
+.columns-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #374151;
+    cursor: pointer;
+}
+
+.columns-menu__item:hover {
+    background: #f3f4f6;
+}
+
+.columns-menu__item span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.columns-menu__empty {
+    padding: 8px 6px;
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+/* Switch Tabla / JSON */
+.view-switch {
+    display: inline-flex;
+    padding: 2px;
+    border-radius: 8px;
+    background: #e5e7eb;
+}
+
+.view-switch button {
+    height: 26px;
+    padding: 0 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #4b5563;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.view-switch button.is-active {
+    background: #ffffff;
+    color: #1d4ed8;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================================
+   Vista JSON
+   ============================================================ */
+.json-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+    gap: 12px;
+    max-height: calc(100vh - 260px);
+    overflow-y: auto;
+    padding-bottom: 8px;
+}
+
+.json-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.json-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.json-card__title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+
+.json-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: #4b5563;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.json-copy-btn:hover {
+    background: #f3f4f6;
+}
+
+.json-copy-btn.is-success {
+    color: #16a34a;
+    border-color: #bbf7d0;
+}
+
+.json-card__body {
+    margin: 0;
+    padding: 10px 12px;
+    overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    line-height: 1.35rem;
+    color: #374151;
+    white-space: pre;
+}
+
+.json-key { color: #7c3aed; }
+.json-string { color: #047857; }
+.json-number { color: #1d4ed8; }
+.json-boolean { color: #c2410c; font-weight: 600; }
+.json-null { color: #9ca3af; font-style: italic; }
+
+.json-view__more {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.json-load-more {
+    padding: 4px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #ffffff;
+    font-weight: 600;
+    color: #2563eb;
+}
+
+/* ============================================================
+   Cursor grab para desplazamiento horizontal de la tabla
+   ============================================================ */
+#tableScrollContainer {
+    cursor: url('/images/cursor-grab.png') 12 12, url('/images/cursor-grab.svg') 12 12, -webkit-grab, grab;
+    user-select: none;
+}
+
+#tableScrollContainer.table-dragging,
+#tableScrollContainer.table-dragging * {
+    cursor: url('/images/cursor-grabbing.png') 12 12, url('/images/cursor-grabbing.svg') 12 12, -webkit-grabbing, grabbing !important;
+}
+
+/* Los botones y elementos interactivos mantienen cursor pointer */
+#tableScrollContainer button,
+#tableScrollContainer button *,
+#tableScrollContainer a {
+    cursor: pointer;
+}
+
+/* El encabezado ordena al hacer click */
+#tableScrollContainer thead th.data-th {
+    cursor: pointer;
+}

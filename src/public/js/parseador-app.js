@@ -11,7 +11,23 @@ document.addEventListener('alpine:init', () => {
             this.activeTab = Object.keys(this.groupedData)?.[0] || 'sec1';
             this.activeEditTab = 0;
             this.esFormatoJson = false;
-            
+
+            // Sincronizar la barra de resultados con la tabla (que se renderiza fuera de Alpine)
+            document.addEventListener('table-rendered', (e) => {
+                this.resultCount = e.detail.rows;
+                this.renderedRows = e.detail.renderedRows;
+                this.tableColumns = e.detail.columns;
+                if (this.viewMode === 'json') {
+                    window.renderJsonView(document.getElementById('jsonViewContainer'));
+                }
+            });
+            document.addEventListener('table-rows-appended', (e) => {
+                this.renderedRows = e.detail.renderedRows;
+            });
+            document.addEventListener('columns-visibility-changed', (e) => {
+                this.hiddenColumnKeys = e.detail.hidden;
+            });
+
             // Configurar detección de scroll para el panel principal
             setTimeout(() => {
                 if (typeof setupMainPanelScrollDetection !== 'undefined') {
@@ -25,6 +41,8 @@ document.addEventListener('alpine:init', () => {
         showSeccionesForm: false,
         selectedParser: null,
         editingData: null,
+        // Columna después de la cual insertar una nueva en el modal de edición
+        selectedColumnIndex: '',
         activeEditTab: 0,
         manualInput: '',
         selectedFile: null,
@@ -43,6 +61,54 @@ document.addEventListener('alpine:init', () => {
         saving: false,
         isParsing: false,
         inputCollapsed: false,
+        // Aviso sobre el contenido cargado (ej. mensajes extraídos de un log)
+        inputAviso: '',
+        // Barra de resultados
+        viewMode: 'tabla',
+        resultCount: 0,
+        renderedRows: 0,
+        tableColumns: [],
+        hiddenColumnKeys: [],
+        columnsMenuOpen: false,
+        columnsFilter: '',
+        copiadoTodo: false,
+
+        // Opciones de visualización de la tabla según el parseador seleccionado
+        tableOptions() {
+            const parser = this.selectedParser || {};
+            return { esFormatoJson: Boolean(parser.esFormatoJson ?? parser.esformatojson) };
+        },
+
+        renderTable(data, columns) {
+            if (!window.updateTable) return;
+            const sortState = {
+                sortColumn: this.sortColumn,
+                sortDirection: this.sortDirection
+            };
+            window.updateTable(Alpine.raw(data), Alpine.raw(columns), (colName) => this.sortTable(colName), null, sortState, this.tableOptions());
+        },
+
+        setViewMode(modo) {
+            this.viewMode = modo;
+            this.columnsMenuOpen = false;
+            if (modo === 'json') {
+                window.renderJsonView(document.getElementById('jsonViewContainer'));
+            }
+        },
+
+        mostrarTodasLasColumnas() {
+            window.setHiddenColumns([]);
+        },
+
+        ocultarColumnasVacias() {
+            window.setHiddenColumns([...new Set([...this.hiddenColumnKeys, ...window.getEmptyColumnKeys()])]);
+        },
+
+        async copiarTodoJson() {
+            await navigator.clipboard.writeText(window.getTableJson());
+            this.copiadoTodo = true;
+            setTimeout(() => { this.copiadoTodo = false; }, 1200);
+        },
 
         async actualizarParsers() {
             const parsers = await window.parserManagement?.actualizarParsers();
@@ -83,16 +149,46 @@ document.addEventListener('alpine:init', () => {
 
         async handleFileSelect(event) {
             const result = await window.fileHandling?.handleFileSelect(event);
+            // Permitir volver a elegir el mismo archivo (si no, el change no se dispara)
+            event.target.value = '';
+            this.inputAviso = '';
             if (result) {
                 this.selectedFile = {
                     name: result.name,
                     file: result.file
                 };
-                this.manualInput = result.content || '';
+                this.manualInput = this.extraerMensajesDeLog(result.content || '', result.name);
             } else {
                 this.selectedFile = null;
                 this.manualInput = '';
             }
+        },
+
+        esParserBase64() {
+            const parser = this.selectedParser || {};
+            return Boolean(parser.codificacionBase64 ?? parser.codificacion_base64);
+        },
+
+        /**
+         * Para parseadores con entrada Base64 (ej. Databox): si el contenido es un log
+         * del REST proxy de Kafka, se queda solo con los mensajes, uno por línea.
+         * Se hace en el navegador para no enviar el log completo al servidor.
+         */
+        extraerMensajesDeLog(texto, origen) {
+            if (!this.esParserBase64() || !window.kafkaLog?.esLogKafka(texto)) {
+                return texto;
+            }
+
+            const { mensajes, duplicados } = window.kafkaLog.extraerMensajesKafka(texto);
+            if (mensajes.length === 0) {
+                this.inputAviso = 'El log no contiene mensajes en las respuestas de Kafka';
+                return texto;
+            }
+
+            const cantidad = mensajes.length === 1 ? '1 mensaje' : `${mensajes.length} mensajes`;
+            this.inputAviso = `Se extrajeron ${cantidad} ${origen ? `de "${origen}"` : 'del log'}` +
+                (duplicados ? ` (${duplicados} repetido${duplicados === 1 ? '' : 's'} omitido${duplicados === 1 ? '' : 's'})` : '');
+            return mensajes.join('\n');
         },
 
         async parsearContenido() {
@@ -102,7 +198,10 @@ document.addEventListener('alpine:init', () => {
                 
                 // Contraer el panel lateral al parsear
                 this.sidebarCollapsed = true;
-                
+
+                // Si se pegó un log de Kafka en un parseador Base64, quedarse con los mensajes
+                this.manualInput = this.extraerMensajesDeLog(this.manualInput);
+
                 const response = await fetch('/parse/manual', {
                     method: 'POST',
                     headers: {
@@ -115,7 +214,6 @@ document.addEventListener('alpine:init', () => {
                 });
 
                 const result = await response.json();
-                console.log('Respuesta del servidor:', result);
 
                 if (!response.ok) {
                     throw new Error(result.error || 'Error al parsear el contenido');
@@ -123,6 +221,10 @@ document.addEventListener('alpine:init', () => {
 
                 if (!result.success) {
                     throw new Error(result.error || 'Error al parsear el contenido');
+                }
+
+                if (result.aviso) {
+                    this.inputAviso = result.aviso;
                 }
 
                 if (result.porSeccion) {
@@ -141,13 +243,7 @@ document.addEventListener('alpine:init', () => {
                     this.groupedData = result.data;
                     this.columns = result.columns;
                     this.tableData = result.data; // Actualizar tableData
-                    if (window.updateTable) {
-                        const sortState = {
-                            sortColumn: this.sortColumn,
-                            sortDirection: this.sortDirection
-                        };
-                        window.updateTable(result.data, this.columns, (colName) => this.sortTable(colName), { data: this.tableData }, sortState);
-                    }
+                    this.renderTable(result.data, result.columns);
                 }
                 
             } catch (error) {
@@ -179,13 +275,7 @@ document.addEventListener('alpine:init', () => {
                     this.activeTab = seccionNombre;
                     this.columns = secciones[seccionNombre].columnas;
                     this.tableData = secciones[seccionNombre].datos; // Actualizar tableData
-                    if (window.updateTable) {
-                        const sortState = {
-                            sortColumn: this.sortColumn,
-                            sortDirection: this.sortDirection
-                        };
-                        window.updateTable(secciones[seccionNombre].datos, this.columns, (colName) => this.sortTable(colName), { data: this.tableData }, sortState);
-                    }
+                    this.renderTable(secciones[seccionNombre].datos, this.columns);
                     
                     // Actualizar estilos de las pestañas
                     tabsContainer.querySelectorAll('button').forEach(btn => {
@@ -207,13 +297,7 @@ document.addEventListener('alpine:init', () => {
 
             // Mostrar los datos de la primera sección
             this.tableData = secciones[this.activeTab].datos; // Actualizar tableData
-            if (window.updateTable) {
-                const sortState = {
-                    sortColumn: this.sortColumn,
-                    sortDirection: this.sortDirection
-                };
-                window.updateTable(secciones[this.activeTab].datos, this.columns, (colName) => this.sortTable(colName), { data: this.tableData }, sortState);
-            }
+            this.renderTable(secciones[this.activeTab].datos, this.columns);
         },
 
         limpiarDatos() {
@@ -222,6 +306,7 @@ document.addEventListener('alpine:init', () => {
             
             this.manualInput = '';
             this.selectedFile = null;
+            this.inputAviso = '';
             this.groupedData = {};
             this.columns = [];
             this.activeTab = null;
@@ -232,12 +317,12 @@ document.addEventListener('alpine:init', () => {
                 tabsContainer.remove();
             }
             
-            const table = document.querySelector('.data-table');
-            if (table) {
-                const thead = table.querySelector('thead');
-                const tbody = table.querySelector('tbody');
-                if (thead) thead.innerHTML = '';
-                if (tbody) tbody.innerHTML = '';
+            this.tableData = [];
+            this.resultCount = 0;
+            this.tableColumns = [];
+            this.columnsMenuOpen = false;
+            if (window.clearTable) {
+                window.clearTable();
             }
         },
 
@@ -300,21 +385,6 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        updateTable(data) {
-            // Actualizar tableData antes de llamar a updateTable
-            this.tableData = data;
-            if (window.updateTable) {
-                const tableDataRef = { data: this.tableData };
-                const sortState = {
-                    sortColumn: this.sortColumn,
-                    sortDirection: this.sortDirection
-                };
-                window.updateTable(data, this.columns, (colName) => this.sortTable(colName), tableDataRef, sortState);
-                // Sincronizar después de la actualización
-                this.tableData = tableDataRef.data;
-            }
-        },
-
         sortTable(columnName) {
             if (!this.tableData || !Array.isArray(this.tableData)) return;
             
@@ -324,11 +394,12 @@ document.addEventListener('alpine:init', () => {
             };
             
             if (window.sortTable) {
-                window.sortTable(columnName, this.tableData, sortState, (sortedData) => {
+                // Ordenar sobre los datos planos: recorrer el proxy de Alpine es lento con muchas filas
+                window.sortTable(columnName, Alpine.raw(this.tableData), sortState, (sortedData) => {
                     this.tableData = sortedData;
                     this.sortColumn = sortState.sortColumn;
                     this.sortDirection = sortState.sortDirection;
-                    this.updateTable(sortedData);
+                    this.renderTable(sortedData, this.columns);
                 });
             }
         },

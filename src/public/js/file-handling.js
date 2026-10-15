@@ -26,12 +26,35 @@ const fileHandling = {
         });
     },
 
+    /**
+     * Carga la librería XLSX bajo demanda (pesa ~300 KB y solo se usa al exportar)
+     */
+    cargarXLSX() {
+        if (window.XLSX) return Promise.resolve(window.XLSX);
+        if (!this._xlsxPromise) {
+            this._xlsxPromise = new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+                script.onload = () => resolve(window.XLSX);
+                script.onerror = () => {
+                    this._xlsxPromise = null;
+                    reject(new Error('No se pudo cargar la librería de exportación'));
+                };
+                document.head.appendChild(script);
+            });
+        }
+        return this._xlsxPromise;
+    },
+
     async exportarXLS(groupedData, columns, parserNombre) {
         try {
             if (!groupedData || (Object.keys(groupedData).length === 0 && !Array.isArray(groupedData))) {
                 throw new Error('No hay datos para exportar');
             }
 
+            const XLSX = await this.cargarXLSX();
+            // Conservar 0 y false; solo null/undefined se exportan vacíos
+            const valorCelda = (valor) => (valor === null || valor === undefined ? '' : valor);
             const wb = XLSX.utils.book_new();
             
             if (Array.isArray(groupedData)) {
@@ -43,7 +66,7 @@ const fileHandling = {
                 const data = [headers];
                 
                 groupedData.forEach(row => {
-                    const rowData = headers.map(header => row[header] || '');
+                    const rowData = headers.map(header => valorCelda(row[header]));
                     data.push(rowData);
                 });
 
@@ -57,7 +80,7 @@ const fileHandling = {
                     const data = [headers];
                     
                     sectionData.datos.forEach(row => {
-                        const rowData = headers.map(header => row[header] || '');
+                        const rowData = headers.map(header => valorCelda(row[header]));
                         data.push(rowData);
                     });
 

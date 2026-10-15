@@ -42,8 +42,12 @@ const initDatabase = async () => {
                 cantidad_columnas INTEGER NOT NULL,
                 incluye_secciones BOOLEAN NOT NULL,
                 esFormatoJson BOOLEAN DEFAULT false,
+                codificacion_base64 BOOLEAN DEFAULT false,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )`,
+
+            // Columnas agregadas después de la creación inicial de la tabla
+            `ALTER TABLE parseadores ADD COLUMN IF NOT EXISTS codificacion_base64 BOOLEAN DEFAULT false`,
 
             // Tabla para columnas de parseadores
             `CREATE TABLE IF NOT EXISTS columnas_parseador (

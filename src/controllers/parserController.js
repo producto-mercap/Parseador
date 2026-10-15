@@ -31,7 +31,15 @@ function validateParserData(data) {
         throw new Error('El nombre del parseador es requerido');
     }
 
-    if (!data.incluyeSecciones) {
+    if (data.esFormatoJson) {
+        // Parseador JSON: las columnas son opcionales (si no se definen se toman
+        // de las claves del JSON) y no llevan cantidad de caracteres
+        data.incluyeSecciones = false;
+        data.tieneDelimitador = false;
+        data.delimitador = null;
+        data.columnas = (data.columnas || []).filter(col => col && col.nombre?.trim());
+        data.columnas.forEach(col => { col.caracteres = null; });
+    } else if (!data.incluyeSecciones) {
         // Validar parseador simple
         if (!Array.isArray(data.columnas) || data.columnas.length === 0) {
             throw new Error('Debe especificar al menos una columna');
@@ -200,11 +208,12 @@ exports.parseManual = async (req, res) => {
             porSeccion: resultado.porSeccion,
             ...(resultado.porSeccion 
                 ? { secciones: resultado.secciones }
-                : { 
+                : {
                     data: Array.isArray(resultado.data) ? resultado.data : [resultado.data],
                     columns: resultado.columnas || []
                 }
-            )
+            ),
+            ...(resultado.aviso ? { aviso: resultado.aviso } : {})
         };
 
         // Enviar respuesta

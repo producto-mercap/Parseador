@@ -4,7 +4,8 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "node --watch src/app.js",
+    "dev": "node --watch-path=src src/app.js",
+    "build:css": "npx -y -p tailwindcss@2.2.19 -p postcss@8.4.31 -p autoprefixer@10.4.16 tailwindcss -c tailwind/tailwind.config.js -i tailwind/input.css -o src/public/css/tailwind.min.css --minify",
     "vercel-build": "echo Build complete"
   },
   "keywords": [],

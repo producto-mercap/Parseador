@@ -1,6 +1,93 @@
 <!-- Tabla de resultados en contenedor separado -->
 <div class="w-full relative">
-    <div class="bg-white rounded-lg shadow overflow-auto table-container" id="tableScrollContainer">
+    <!-- Barra de resultados: cantidad, columnas y modo de vista -->
+    <div class="results-toolbar" x-show="resultCount > 0" x-cloak>
+        <div class="results-count">
+            <span x-text="resultCount === 1 ? '1 registro' : resultCount.toLocaleString('es-AR') + ' registros'"></span>
+            <span class="results-count__partial" x-show="viewMode === 'tabla' && renderedRows < resultCount">
+                · mostrando <span x-text="renderedRows.toLocaleString('es-AR')"></span> (se cargan más al hacer scroll)
+                <button type="button" @click="window.renderAllRows()" title="Útil para buscar con Ctrl+F; puede tardar con muchos registros">Mostrar todos</button>
+            </span>
+        </div>
+
+        <div class="results-toolbar__actions">
+            <!-- Columnas ocultas: acceso rápido para restaurarlas -->
+            <button type="button"
+                    class="hidden-cols-chip"
+                    x-show="hiddenColumnKeys.length > 0 && viewMode === 'tabla'"
+                    @click="mostrarTodasLasColumnas()"
+                    title="Mostrar todas las columnas">
+                <span x-text="hiddenColumnKeys.length === 1 ? '1 columna oculta' : hiddenColumnKeys.length + ' columnas ocultas'"></span>
+                <span class="hidden-cols-chip__action">Mostrar todas</span>
+            </button>
+
+            <!-- Selector de columnas -->
+            <div class="relative" x-show="viewMode === 'tabla'" @keydown.escape.window="columnsMenuOpen = false">
+                <button type="button"
+                        class="toolbar-btn"
+                        :class="{ 'is-active': columnsMenuOpen }"
+                        @click="columnsMenuOpen = !columnsMenuOpen; columnsFilter = ''; if (columnsMenuOpen) $nextTick(() => $refs.columnsFilterInput.focus())"
+                        :aria-expanded="columnsMenuOpen.toString()">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                    </svg>
+                    <span>Columnas</span>
+                    <span class="toolbar-btn__badge" x-text="(tableColumns.length - hiddenColumnKeys.length) + '/' + tableColumns.length"></span>
+                </button>
+
+                <div class="columns-menu" x-show="columnsMenuOpen" x-transition.opacity @click.outside="columnsMenuOpen = false">
+                    <input type="text"
+                           x-ref="columnsFilterInput"
+                           x-model="columnsFilter"
+                           class="columns-menu__search"
+                           placeholder="Buscar columna..."
+                           autocomplete="off">
+
+                    <div class="columns-menu__shortcuts">
+                        <button type="button" @click="mostrarTodasLasColumnas()">Mostrar todas</button>
+                        <button type="button" @click="ocultarColumnasVacias()" title="Oculta las columnas sin valores en ningún registro">Ocultar vacías</button>
+                    </div>
+
+                    <div class="columns-menu__list">
+                        <template x-for="col in tableColumns.filter(c => c.nombre.toLowerCase().includes(columnsFilter.toLowerCase()))" :key="col.key">
+                            <label class="columns-menu__item">
+                                <input type="checkbox"
+                                       :checked="!hiddenColumnKeys.includes(col.key)"
+                                       @change="window.toggleColumn(col.key)">
+                                <span x-text="col.nombre"></span>
+                            </label>
+                        </template>
+                        <p class="columns-menu__empty"
+                           x-show="!tableColumns.some(c => c.nombre.toLowerCase().includes(columnsFilter.toLowerCase()))">
+                            Sin coincidencias
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Copiar todo (vista JSON) -->
+            <button type="button" class="toolbar-btn" x-show="viewMode === 'json'" @click="copiarTodoJson($event)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span x-text="copiadoTodo ? 'Copiado' : 'Copiar todo'"></span>
+            </button>
+
+            <!-- Switch Tabla / JSON -->
+            <div class="view-switch" role="tablist" aria-label="Modo de vista">
+                <button type="button" role="tab"
+                        :class="{ 'is-active': viewMode === 'tabla' }"
+                        :aria-selected="(viewMode === 'tabla').toString()"
+                        @click="setViewMode('tabla')">Tabla</button>
+                <button type="button" role="tab"
+                        :class="{ 'is-active': viewMode === 'json' }"
+                        :aria-selected="(viewMode === 'json').toString()"
+                        @click="setViewMode('json')">JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow overflow-auto table-container" id="tableScrollContainer" x-show="viewMode === 'tabla'">
         <table class="data-table min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
@@ -12,5 +99,7 @@
             </tbody>
         </table>
     </div>
-</div>
 
+    <!-- Vista JSON: un bloque por registro -->
+    <div id="jsonViewContainer" class="json-view" x-show="viewMode === 'json'" x-cloak></div>
+</div>

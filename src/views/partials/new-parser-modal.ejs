@@ -25,6 +25,8 @@
                     x-data="{ 
                         tieneDelimitador: false,
                         incluyeSecciones: false,
+                        esFormatoJson: false,
+                        codificacionBase64: false,
                         cantidadColumnas: 0,
                         cantidadSecciones: 1,
                         seccionesData: {},
@@ -47,11 +49,20 @@
                             delimitador: formData.get('delimitador'),
                             cantidadColumnas: parseInt(cantidadColumnas),
                             incluyeSecciones: incluyeSecciones,
+                            esFormatoJson: esFormatoJson,
+                            codificacionBase64: codificacionBase64,
                             columnas: [],
                             secciones: []
                         };
-                        
-                        if (!incluyeSecciones) {
+
+                        if (esFormatoJson) {
+                            data.incluyeSecciones = false;
+                            data.tieneDelimitador = false;
+                            for (let i = 0; i < data.cantidadColumnas; i++) {
+                                const nombre = (formData.get(`columna_${i}`) || '').trim();
+                                if (nombre) data.columnas.push({ nombre: nombre, caracteres: null });
+                            }
+                        } else if (!incluyeSecciones) {
                             for (let i = 0; i < data.cantidadColumnas; i++) {
                                 data.columnas.push({
                                     nombre: formData.get(`columna_${i}`),
@@ -116,10 +127,10 @@
                                     required>
                             </div>
                             
-                            <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-4" x-show="!esFormatoJson">
                                 <label class="switch">
-                                    <input 
-                                        type="checkbox" 
+                                    <input
+                                        type="checkbox"
                                         x-model="incluyeSecciones"
                                     >
                                     <span class="slider"></span>
@@ -130,10 +141,49 @@
                             </div>
                         </div>
 
+                        <!-- Formato y codificación del input -->
+                        <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
+                            <div class="flex items-center space-x-4">
+                                <label class="switch">
+                                    <input
+                                        type="checkbox"
+                                        x-model="esFormatoJson"
+                                        @change="if (esFormatoJson) { incluyeSecciones = false; tieneDelimitador = false; }"
+                                    >
+                                    <span class="slider"></span>
+                                </label>
+                                <span class="text-sm font-medium text-gray-800">
+                                    Formato JSON
+                                </span>
+                            </div>
+
+                            <div class="flex items-center space-x-4">
+                                <label class="switch">
+                                    <input
+                                        type="checkbox"
+                                        x-model="codificacionBase64"
+                                    >
+                                    <span class="slider"></span>
+                                </label>
+                                <span class="text-sm font-medium text-gray-800">
+                                    Entrada codificada en Base64
+                                </span>
+                            </div>
+                        </div>
+
+                        <p x-show="codificacionBase64" class="text-xs text-gray-500 -mt-2">
+                            Cada línea del input se decodifica como un mensaje independiente antes de parsearlo.
+                        </p>
+
                         <template x-if="!incluyeSecciones">
                             <!-- Configuración parseador simple -->
                             <div class="space-y-6">
-                                <div class="flex items-center space-x-4">
+                                <p x-show="esFormatoJson" class="text-xs text-gray-500">
+                                    Las columnas son opcionales: si las definís, fijan el orden de la tabla con los nombres de las claves del JSON.
+                                    Las claves que no estén definidas se agregan al final.
+                                </p>
+
+                                <div class="flex items-center space-x-4" x-show="!esFormatoJson">
                                     <label class="switch">
                                         <input 
                                             type="checkbox" 
@@ -146,7 +196,7 @@
                                     </span>
                                 </div>
 
-                                <div x-show="tieneDelimitador">
+                                <div x-show="tieneDelimitador && !esFormatoJson">
                                     <label class="block text-sm font-medium mb-1">Delimitador</label>
                                     <input 
                                         type="text" 
@@ -193,10 +243,10 @@
                                             type="text" 
                                             class="w-full rounded-lg border-2 border-gray-300 p-2 text-sm shadow-sm focus:ring-0 focus:border-blue-500 outline-none"
                                             autocomplete="off"
-                                            :placeholder="'Nombre columna ' + (index + 1)" 
-                                            required>
-                                        
-                                        <template x-if="!tieneDelimitador">
+                                            :placeholder="esFormatoJson ? 'Clave JSON ' + (index + 1) : 'Nombre columna ' + (index + 1)"
+                                            :required="!esFormatoJson">
+
+                                        <template x-if="!tieneDelimitador && !esFormatoJson">
                                             <div class="flex items-center gap-2">
                                                 <div class="flex items-center border border-gray-300 rounded-md number-input-container">
                                                     <button 

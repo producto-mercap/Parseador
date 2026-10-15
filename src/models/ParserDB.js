@@ -13,16 +13,20 @@ class ParserDB {
                     nombre, 
                     tiene_delimitador, 
                     delimitador, 
-                    cantidad_columnas, 
-                    incluye_secciones
-                ) VALUES ($1, $2, $3, $4, $5)
+                    cantidad_columnas,
+                    incluye_secciones,
+                    esformatojson,
+                    codificacion_base64
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
                 RETURNING id`,
                 [
                     parserData.nombre,
                     parserData.tieneDelimitador || false,
                     parserData.delimitador,
                     parserData.columnas?.length || parserData.cantidadColumnas || 0,
-                    parserData.incluyeSecciones || false
+                    parserData.incluyeSecciones || false,
+                    Boolean(parserData.esFormatoJson),
+                    Boolean(parserData.codificacionBase64)
                 ]
             );
 
@@ -101,28 +105,66 @@ class ParserDB {
         }
     }
 
+    /**
+     * Trae parseadores junto con sus columnas y secciones en UNA sola consulta.
+     * Cada ida y vuelta a Neon cuesta ~150 ms, así que evitamos el N+1
+     * (antes la carga de la página hacía una consulta por parseador y por sección).
+     */
+    static async queryParsersConDetalle(where = '', params = []) {
+        const result = await pool.query(
+            `SELECT p.*,
+                COALESCE((
+                    SELECT json_agg(json_build_object(
+                        'id', c.id,
+                        'nombre', c.nombre,
+                        'caracteres', c.cantidad_caracteres,
+                        'orden', c.orden
+                    ) ORDER BY c.orden)
+                    FROM columnas_parseador c
+                    WHERE c.parseador_id = p.id
+                ), '[]'::json) AS columnas_json,
+                COALESCE((
+                    SELECT json_agg(json_build_object(
+                        'id', s.id,
+                        'nombre', s.nombre,
+                        'header', s.header,
+                        'tieneDelimitador', s.tiene_delimitador,
+                        'delimitador', s.delimitador,
+                        'cantidadColumnas', s.cantidad_columnas,
+                        'orden', s.orden,
+                        'columnas', COALESCE((
+                            SELECT json_agg(json_build_object(
+                                'id', cs.id,
+                                'nombre', cs.nombre,
+                                'caracteres', cs.cantidad_caracteres,
+                                'orden', cs.orden
+                            ) ORDER BY cs.orden)
+                            FROM columnas_seccion cs
+                            WHERE cs.seccion_id = s.id
+                        ), '[]'::json)
+                    ) ORDER BY s.orden)
+                    FROM secciones s
+                    WHERE s.parseador_id = p.id
+                ), '[]'::json) AS secciones_json
+             FROM parseadores p
+             ${where}
+             ORDER BY p.nombre ASC`,
+            params
+        );
+
+        return result.rows.map(row => {
+            const { columnas_json, secciones_json, ...parser } = row;
+            if (parser.incluye_secciones) {
+                parser.secciones = secciones_json;
+            } else {
+                parser.columnas = columnas_json;
+            }
+            return parser;
+        });
+    }
+
     static async getAll() {
-        try {
-            const result = await pool.query(
-                `SELECT * FROM parseadores ORDER BY nombre ASC`
-            );
-
-            const parsers = result.rows;
-
-            // Obtener datos relacionados para cada parser
-            const parsersWithDetails = await Promise.all(parsers.map(async parser => {
-                if (!parser.incluye_secciones) {
-                    parser.columnas = await this.getColumnasByParserId(parser.id);
-                } else {
-                    parser.secciones = await this.getSeccionesByParserId(parser.id);
-                }
-                return parser;
-            }));
-
-            return parsersWithDetails;
-        } catch (error) {
-            throw error;
-        }
+        return this.queryParsersConDetalle();
     }
 
     static async getParserById(id) {
@@ -141,6 +183,8 @@ class ParserDB {
             // Convertir nombres de columnas
             parser.tieneDelimitador = parser.tiene_delimitador;
             parser.incluyeSecciones = parser.incluye_secciones;
+            parser.esFormatoJson = Boolean(parser.esformatojson);
+            parser.codificacionBase64 = Boolean(parser.codificacion_base64);
             
             return parser;
         } catch (error) {
@@ -149,29 +193,18 @@ class ParserDB {
     }
 
     static async getById(id) {
-        try {
-            const parser = await this.getParserById(id);
-            if (!parser) {
-                return null;
-            }
-
-            // Obtener columnas o secciones según corresponda
-            if (!parser.incluyeSecciones) {
-                const columnas = await this.getColumnasByParserId(id);
-                parser.columnas = columnas.map(col => ({
-                    id: col.id,
-                    nombre: col.nombre,
-                    caracteres: col.caracteres,
-                    orden: col.orden
-                }));
-            } else {
-                parser.secciones = await this.getSeccionesByParserId(id);
-            }
-
-            return parser;
-        } catch (error) {
-            throw error;
+        const [parser] = await this.queryParsersConDetalle('WHERE p.id = $1', [id]);
+        if (!parser) {
+            return null;
         }
+
+        // Convertir nombres de columnas
+        parser.tieneDelimitador = parser.tiene_delimitador;
+        parser.incluyeSecciones = parser.incluye_secciones;
+        parser.esFormatoJson = Boolean(parser.esformatojson);
+        parser.codificacionBase64 = Boolean(parser.codificacion_base64);
+
+        return parser;
     }
 
     static async delete(id) {
@@ -226,15 +259,20 @@ class ParserDB {
                     nombre = $1, 
                     tiene_delimitador = $2, 
                     delimitador = $3, 
-                    cantidad_columnas = $4, 
-                    incluye_secciones = $5
-                WHERE id = $6`,
+                    cantidad_columnas = $4,
+                    incluye_secciones = $5,
+                    esformatojson = COALESCE($6, esformatojson),
+                    codificacion_base64 = COALESCE($7, codificacion_base64)
+                WHERE id = $8`,
                 [
                     parserData.nombre,
                     parserData.tieneDelimitador || false,
                     parserData.delimitador,
                     parserData.incluyeSecciones ? 0 : parserData.columnas?.length || 0,
                     parserData.incluyeSecciones || false,
+                    // Si el cliente no envía el flag se conserva el valor guardado
+                    parserData.esFormatoJson === undefined ? null : Boolean(parserData.esFormatoJson),
+                    parserData.codificacionBase64 === undefined ? null : Boolean(parserData.codificacionBase64),
                     id
                 ]
             );

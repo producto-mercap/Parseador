@@ -59,7 +59,10 @@
         <div class="w-full">
             <!-- Encabezado del área de entrada con botón para colapsar/expandir -->
             <div class="input-toggle-bar">
-                <span class="input-toggle-label">Contenido a parsear</span>
+                <span class="input-toggle-label">
+                    Contenido a parsear
+                    <span class="input-aviso" x-show="inputAviso" x-text="inputAviso" x-cloak></span>
+                </span>
                 <button
                     type="button"
                     @click="inputCollapsed = !inputCollapsed"

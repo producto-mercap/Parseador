@@ -6,29 +6,32 @@
     <title>Parseador</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/images/logo.ico?v=<%= Date.now() %>">
-    
-    <!-- Librerías externas -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
-    <!-- Estilos propios -->
-    <link rel="stylesheet" href="/css/components.css">
-    <link rel="stylesheet" href="/css/forms.css">
-    <link rel="stylesheet" href="/css/table.css">
-    
+    <link rel="icon" type="image/x-icon" href="/images/logo.ico?v=<%= assetVersion %>">
+
+    <!-- Estilos: Tailwind reducido a las clases usadas (npm run build:css) + estilos propios -->
+    <link rel="stylesheet" href="/css/tailwind.min.css?v=<%= assetVersion %>">
+    <link rel="stylesheet" href="/css/components.css?v=<%= assetVersion %>">
+    <link rel="stylesheet" href="/css/forms.css?v=<%= assetVersion %>">
+    <link rel="stylesheet" href="/css/table.css?v=<%= assetVersion %>">
+
     <!-- JavaScript propios -->
     <script>
         // Inicializar parsers desde el servidor
         window.INITIAL_PARSERS = <%- JSON.stringify(typeof parsers !== 'undefined' ? parsers : []) %>;
     </script>
-    <script src="/js/parser-management.js"></script>
-    <script src="/js/file-handling.js"></script>
-    <script src="/js/table-utils.js"></script>
-    <script src="/js/scroll-utils.js"></script>
-    <script src="/js/alpine-components.js"></script>
-    <script src="/js/parseador-app.js"></script>
+    <script defer src="/js/parser-management.js?v=<%= assetVersion %>"></script>
+    <script defer src="/js/kafka-log.js?v=<%= assetVersion %>"></script>
+    <script defer src="/js/file-handling.js?v=<%= assetVersion %>"></script>
+    <script defer src="/js/table-utils.js?v=<%= assetVersion %>"></script>
+    <script defer src="/js/scroll-utils.js?v=<%= assetVersion %>"></script>
+    <script defer src="/js/alpine-components.js?v=<%= assetVersion %>"></script>
+    <script defer src="/js/parseador-app.js?v=<%= assetVersion %>"></script>
+
+    <!-- Alpine va al final: los scripts defer se ejecutan en orden y los listeners
+         de alpine:init tienen que estar registrados antes de que Alpine arranque.
+         Versión fija (evita redirects y permite cachear). XLSX se carga bajo demanda
+         al exportar (ver file-handling.js). -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
 </head>
 <body x-data="parseadorApp">
     <%- include('../partials/header') %>

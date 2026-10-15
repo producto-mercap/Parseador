@@ -40,10 +40,24 @@
                                class="w-full rounded-lg border-gray-300 bg-white shadow-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
 
+                    <!-- Formato y codificación del input -->
+                    <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
+                        <div class="flex items-center gap-4" x-show="editingData.esFormatoJson">
+                            <span class="text-sm font-medium text-gray-700">Formato JSON</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <label class="switch">
+                                <input type="checkbox" x-model="editingData.codificacionBase64">
+                                <span class="slider"></span>
+                            </label>
+                            <span class="text-sm font-medium text-gray-700">Entrada codificada en Base64</span>
+                        </div>
+                    </div>
+
                     <!-- Columnas para parseador simple -->
                     <template x-if="!editingData.incluyeSecciones">
                         <div class="space-y-4">
-                            <div class="flex items-center gap-4 mb-4">
+                            <div class="flex items-center gap-4 mb-4" x-show="!editingData.esFormatoJson">
                                 <label class="switch">
                                     <input type="checkbox" x-model="editingData.tieneDelimitador">
                                     <span class="slider"></span>
@@ -51,7 +65,7 @@
                                 <span class="text-sm font-medium text-gray-700">Usar Delimitador</span>
                             </div>
 
-                            <template x-if="editingData.tieneDelimitador">
+                            <template x-if="editingData.tieneDelimitador && !editingData.esFormatoJson">
                                 <div class="mb-4">
                                     <label class="block text-sm font-medium text-gray-700">Delimitador</label>
                                     <input type="text" 
@@ -82,7 +96,7 @@
                                                    @blur="columna.nombre = columna.nombre?.trim()">
                                         </div>
                                         
-                                        <div class="col-span-1" x-show="!editingData.tieneDelimitador">
+                                        <div class="col-span-1" x-show="!editingData.tieneDelimitador && !editingData.esFormatoJson">
                                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                                 Cantidad de Caracteres <span class="text-red-500">*</span>
                                             </label>

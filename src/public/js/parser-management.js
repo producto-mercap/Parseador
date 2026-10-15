@@ -210,13 +210,14 @@ const parserManagement = {
                 delimitador: editingData.delimitador,
                 cantidad_columnas: editingData.columnas?.length || 0,
                 esFormatoJson: editingData.esFormatoJson ? 1 : 0,
+                codificacionBase64: editingData.codificacionBase64 ? 1 : 0,
                 tieneDelimitador: editingData.tieneDelimitador ? 1 : 0,
                 incluyeSecciones: editingData.incluyeSecciones ? 1 : 0,
-                columnas: Array.isArray(editingData.columnas) 
+                columnas: Array.isArray(editingData.columnas)
                     ? editingData.columnas.map((col, index) => ({
                         id: col.id,
                         nombre: col.nombre?.trim(),
-                        caracteres: editingData.tieneDelimitador ? null : (col.caracteres || 1),
+                        caracteres: (editingData.tieneDelimitador || editingData.esFormatoJson) ? null : (col.caracteres || 1),
                         orden: index
                     }))
                     : [],

@@ -18,7 +18,14 @@ if (!process.env.VERCEL) {
     app.set('view cache', false);
 }
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Versión de los assets: las URLs de CSS/JS llevan ?v=<versión>, así el navegador
+// puede cachearlos mucho tiempo y cada deploy (o reinicio local) fuerza la descarga nueva
+const assetVersion = (process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString(36)).slice(0, 12);
+app.locals.assetVersion = assetVersion;
+
+app.use(express.static(path.join(__dirname, 'public'), {
+    maxAge: process.env.VERCEL ? '7d' : 0
+}));
 
 // Aumentar lÃ­mites para el procesamiento de datos
 app.use(express.json({limit: '50mb'}));

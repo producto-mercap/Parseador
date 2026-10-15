@@ -1,3 +1,5 @@
+const kafkaLog = require('../public/js/kafka-log');
+
 class Parser {
     constructor(data) {
         this.id = data.id;
@@ -9,7 +11,9 @@ class Parser {
         // PostgreSQL puede retornar el campo en minúsculas o camelCase
         this.esFormatoJson = data.esFormatoJson !== undefined ? data.esFormatoJson : 
                             (data.esformatojson !== undefined ? data.esformatojson : false);
-        
+        // Si el input viene codificado en Base64 se decodifica antes de parsear
+        this.codificacionBase64 = Boolean(data.codificacionBase64 ?? data.codificacion_base64 ?? false);
+
         // Configuración del parseador JSON (valores por defecto)
         this.configJson = data.configJson || data.config_json || {
             separador: '.',           // Separador para claves anidadas: '.' o '_'
@@ -47,8 +51,11 @@ class Parser {
 
     async parse(input) {
         // Determinar si el input es un archivo o texto
-        const contenido = input.buffer ? input.buffer.toString('utf8') : input;
-        
+        let contenido = input.buffer ? input.buffer.toString('utf8') : input;
+        if (this.codificacionBase64) {
+            contenido = this.decodificarBase64(contenido);
+        }
+
         if (this.esFormatoJson) {
             return this.procesarJson(contenido);
         }
@@ -62,12 +69,49 @@ class Parser {
         }
     }
 
+    /**
+     * Decodifica un input en Base64. Cada línea no vacía se trata como un mensaje
+     * independiente (p. ej. un mensaje de Databox por línea) y se devuelven los
+     * mensajes decodificados separados por salto de línea.
+     *
+     * Si el contenido es un log del REST proxy de Kafka (ej. rest-http-ws-*.log),
+     * primero se extraen los mensajes de las respuestas a /records.
+     */
+    decodificarBase64(contenido) {
+        let lineas;
+        if (kafkaLog.esLogKafka(contenido)) {
+            const { mensajes, duplicados } = kafkaLog.extraerMensajesKafka(contenido);
+            if (mensajes.length === 0) {
+                throw new Error('El log no contiene mensajes en las respuestas de Kafka');
+            }
+            this.avisoEntrada = `Se extrajeron ${mensajes.length} mensaje(s) del log` +
+                (duplicados ? ` (${duplicados} repetido(s) omitido(s))` : '');
+            lineas = mensajes;
+        } else {
+            lineas = contenido.split(/\r\n|\r|\n/).map(linea => linea.trim()).filter(Boolean);
+        }
+
+        return lineas.map((linea, index) => {
+            // Aceptar también la variante base64url (- y _) y padding faltante
+            const normalizada = linea.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+            if (!/^[A-Za-z0-9+/]+={0,2}$/.test(normalizada)) {
+                throw new Error(`La línea ${index + 1} no es un texto Base64 válido`);
+            }
+            return Buffer.from(normalizada, 'base64').toString('utf8');
+        }).join('\n');
+    }
+
     async parseManual(text) {
+        if (this.codificacionBase64) {
+            text = this.decodificarBase64(text);
+        }
+
         if (this.esFormatoJson) {
             const resultados = this.procesarJson(text);
             return {
                 data: resultados,
-                columnas: this.columnas || []
+                columnas: this.columnas || [],
+                aviso: this.avisoEntrada
             };
         }
         
@@ -259,7 +303,23 @@ class Parser {
     procesarJson(contenido) {
         try {
             const contenidoLimpio = contenido.trim();
-            const jsonData = JSON.parse(contenidoLimpio);
+            let jsonData;
+            try {
+                jsonData = JSON.parse(contenidoLimpio);
+            } catch (errorDocumento) {
+                // Si no es un único documento, intentar un JSON por línea (NDJSON)
+                const lineas = contenidoLimpio.split(/\r?\n/).filter(linea => linea.trim());
+                if (lineas.length < 2) {
+                    throw errorDocumento;
+                }
+                jsonData = lineas.map((linea, index) => {
+                    try {
+                        return JSON.parse(linea);
+                    } catch (errorLinea) {
+                        throw new Error(`Línea ${index + 1}: ${errorLinea.message}`);
+                    }
+                });
+            }
             const separador = this.configJson.separador || '.';
             const arrayPrimitivos = this.configJson.arrayPrimitivos || 'expandir';
             const arrayObjetos = this.configJson.arrayObjetos || 'normalizar';
@@ -475,8 +535,17 @@ class Parser {
                 procesarDato(jsonData);
             }
 
+            // Si el parseador tiene columnas definidas, respetan ese orden y las
+            // claves no definidas se agregan al final; si no, orden alfabético
+            const columnasDefinidas = (this.columnas || [])
+                .map(col => col.nombre)
+                .filter(Boolean);
+            const columnasExtra = Array.from(todasLasClaves)
+                .filter(clave => !columnasDefinidas.includes(clave))
+                .sort();
+            const columnasOrdenadas = [...columnasDefinidas, ...columnasExtra];
+
             // Asegurar que todas las filas tengan las mismas columnas (rellenar con null)
-            const columnasOrdenadas = Array.from(todasLasClaves).sort();
             const filasNormalizadas = filas.map(fila => {
                 const filaNormalizada = {};
                 columnasOrdenadas.forEach(columna => {
