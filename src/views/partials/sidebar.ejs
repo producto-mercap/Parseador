@@ -16,8 +16,36 @@
         <!-- Separador -->
         <div class="h-px bg-gray-200 mb-4"></div>
 
+        <!-- Buscador de parseadores -->
+        <div class="sidebar-search" x-show="parsers.length > 0">
+            <svg class="sidebar-search__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+            </svg>
+            <input type="search"
+                   x-model="parserSearch"
+                   class="sidebar-search__input"
+                   placeholder="Buscar parseador..."
+                   aria-label="Buscar parseador"
+                   autocomplete="off"
+                   @keydown.escape.prevent="parserSearch = ''"
+                   @keydown.enter.prevent="if (filteredParsers().length) selectedParser = filteredParsers()[0]">
+            <button type="button"
+                    class="sidebar-search__clear"
+                    x-show="parserSearch"
+                    @click="parserSearch = ''; $el.previousElementSibling.focus()"
+                    title="Limpiar búsqueda"
+                    aria-label="Limpiar búsqueda">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
         <!-- Lista de parseadores -->
         <nav class="space-y-1">
+            <p class="sidebar-search__empty" x-show="parsers.length > 0 && filteredParsers().length === 0">
+                Ningún parseador coincide con "<span x-text="parserSearch"></span>"
+            </p>
             <template x-if="parsers.length === 0">
                 <div class="text-gray-400 text-sm p-3 text-center bg-gray-50 rounded-lg border border-gray-100">
                     <svg class="w-8 h-8 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,7 +54,7 @@
                     <p>No hay parseadores configurados</p>
                 </div>
             </template>
-            <template x-for="parser in parsers" :key="parser.id">
+            <template x-for="parser in filteredParsers()" :key="parser.id">
                 <div 
                     class="group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200"
                     @click="selectedParser = parser"

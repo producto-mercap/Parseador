@@ -63,6 +63,22 @@ document.addEventListener('alpine:init', () => {
         inputCollapsed: false,
         // Aviso sobre el contenido cargado (ej. mensajes extraídos de un log)
         inputAviso: '',
+        // Texto del buscador de parseadores del panel lateral
+        parserSearch: '',
+
+        /**
+         * Parseadores que coinciden con el buscador (sin distinguir mayúsculas ni tildes)
+         */
+        filteredParsers() {
+            const normalizar = (texto) => (texto || '')
+                .normalize('NFD')
+                .replace(/[̀-ͯ]/g, '')
+                .toLowerCase()
+                .trim();
+            const busqueda = normalizar(this.parserSearch);
+            if (!busqueda) return this.parsers;
+            return this.parsers.filter(parser => normalizar(parser.nombre).includes(busqueda));
+        },
         // Barra de resultados
         viewMode: 'tabla',
         resultCount: 0,
